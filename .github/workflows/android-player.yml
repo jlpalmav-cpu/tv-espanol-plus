@@ -48,7 +48,7 @@ jobs:
         working-directory: android-player
         run: unzip -t app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Emulator install and launch smoke test
+      - name: Emulator install and runtime smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -60,18 +60,41 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am force-stop com.epalma.tvespanolplus
-            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity > launch.txt
-            cat launch.txt
-            grep -q "Status: ok" launch.txt
-            sleep 8
-            PID="$(adb shell pidof com.epalma.tvespanolplus | tr -d '\r')"
+            adb shell am start -n com.epalma.tvespanolplus/.MainActivity
+
+            attempt=0
+            PID=""
+            while [ "$attempt" -lt 60 ]; do
+              PID="$(adb shell pidof com.epalma.tvespanolplus 2>/dev/null | tr -d '\r' || true)"
+              if [ -n "$PID" ]; then break; fi
+              attempt=$((attempt + 1))
+              sleep 2
+            done
             test -n "$PID"
-            LOGS="$(adb logcat -d -t 400)"
-            if echo "$LOGS" | grep -E "FATAL EXCEPTION|Process: com\.epalma\.tvespanolplus"; then
-              echo "Application crash detected during emulator smoke test"
+
+            attempt=0
+            RESUMED=""
+            while [ "$attempt" -lt 60 ]; do
+              if adb shell dumpsys activity activities 2>/dev/null | grep -E "mResumedActivity|topResumedActivity" | grep -q "com.epalma.tvespanolplus/.MainActivity"; then
+                RESUMED=1
+                break
+              fi
+              attempt=$((attempt + 1))
+              sleep 2
+            done
+            test "$RESUMED" = "1"
+
+            sleep 10
+            adb shell uiautomator dump /sdcard/window.xml
+            adb pull /sdcard/window.xml window.xml
+            grep -q 'package="com.epalma.tvespanolplus"' window.xml
+
+            LOGS="$(adb logcat -d -t 800)"
+            if echo "$LOGS" | grep -E "FATAL EXCEPTION|ANR in com\.epalma\.tvespanolplus|Process: com\.epalma\.tvespanolplus.*has died"; then
+              echo "Application crash/ANR detected during emulator smoke test"
               exit 1
             fi
-            echo "Runtime smoke OK: package installed, MainActivity launched and process remained alive."
+            echo "Runtime smoke OK: APK installed, process alive, MainActivity resumed, UI hierarchy visible, no fatal crash/ANR."
 
       - name: Prepare validated v1.4.0 APK
         working-directory: android-player
@@ -81,8 +104,8 @@ jobs:
           sha256sum dist/TV_Espanol_Plus_Player-v1.4.0.apk > dist/SHA256.txt
           cat > dist/TEST_STATUS.txt <<'TXT'
           TV Español+ Player v1.4.0
-          PASSED BEFORE PUBLICATION: unit/security/search/stress tests + Android lint + APK build + ZIP/APK integrity + API 35 emulator install/launch/runtime smoke test.
-          The previous instrumentation runner was discarded because the unaccelerated GitHub Linux emulator crashed its instrumentation process before discovering tests (0 tests); the replacement runtime gate installs the actual APK, launches MainActivity, verifies Android reports Status: ok, verifies the app process stays alive, and rejects FATAL EXCEPTION crashes.
+          PASSED BEFORE PUBLICATION: unit/security/search/stress tests + Android lint + APK build + ZIP/APK integrity + API 35 emulator install/runtime smoke test.
+          Runtime gate installs the actual APK, starts MainActivity without relying on the very slow unaccelerated emulator's `am start -W` timing, verifies the app process exists, verifies MainActivity reaches resumed state, verifies the app owns the visible UI hierarchy, and rejects fatal crashes or ANRs.
           v1.4: non-blocking background refresh with hard timeout; asynchronous EPG; automatic subcategories for large categories; query-faithful Super Search; one best result per channel; Spanish-first audio/subtitle selection with manual track menu; secure M3U/Basic/Xtream list support; AndroidKeyStore AES-GCM encryption for playlist URL, credentials and cached M3U/XMLTV; protected default list; country folders; dual view; Android TV and mobile safe-area layouts.
           NOTE: a stream can only offer Spanish audio/subtitles if the provider publishes those tracks. The app does not fabricate or translate unavailable tracks.
           Physical-device validation is still recommended for long-session zapping, weak Wi-Fi and dual-decoder differences between TV models.
