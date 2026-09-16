@@ -3,7 +3,6 @@ package com.epalma.tvespanolplus
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -26,17 +25,15 @@ class PlaylistRepository(private val context: Context) {
         )
     }
 
-    /**
-     * Refreshes only the M3U catalog. EPG download/parsing is intentionally
-     * excluded so the Home screen never waits for a large XMLTV file.
-     */
+    /** Refresh only the M3U catalog; XMLTV is intentionally asynchronous. */
     suspend fun refresh(active: PlaylistConfig, previousChannels: List<Channel>): RefreshPayload = withContext(Dispatchers.IO) {
-        val text = downloadText(active.url)
+        val request = PlaylistRequestResolver.playlist(active)
+        val text = downloadText(request)
         val parsed = M3uParser.parse(text)
         require(PlaybackPolicy.shouldAcceptRefresh(previousChannels.size, parsed.channels.size)) {
             "La actualización devolvió solo ${parsed.channels.size} canales; se conserva la versión anterior"
         }
-        atomicWrite(store.playlistCache(active.id), text.toByteArray())
+        store.writeEncrypted(store.playlistCache(active.id), text.toByteArray())
 
         val oldById = previousChannels.associateBy { it.id }
         val newById = parsed.channels.associateBy { it.id }
@@ -50,46 +47,78 @@ class PlaylistRepository(private val context: Context) {
         val now = System.currentTimeMillis()
         val playlists = store.ensureDefaults().map { if (it.id == active.id) it.copy(lastUpdatedEpochMs = now) else it }
         store.savePlaylists(playlists)
+        val epgRequest = PlaylistRequestResolver.epg(active, parsed.epgUrl)
         RefreshPayload(
             channels = parsed.channels,
             programs = emptyMap(),
-            epgUrl = parsed.epgUrl,
+            epgUrl = epgRequest?.url,
             playlists = playlists,
             result = RefreshResult(true, if (added + removed + changed == 0) "Lista al día" else "Lista actualizada", added, removed, changed, parsed.channels.size)
         )
     }
 
     suspend fun loadCachedPrograms(active: PlaylistConfig, channels: List<Channel>): Map<String, List<Program>> = withContext(Dispatchers.IO) {
-        val file = store.epgCache(active.id)
-        if (!file.exists() || channels.isEmpty()) return@withContext emptyMap()
+        val bytes = store.readEncrypted(store.epgCache(active.id)) ?: return@withContext emptyMap()
+        if (channels.isEmpty()) return@withContext emptyMap()
         runCatching {
-            file.inputStream().use { input -> EpgParser.parse(input, channels.mapNotNull { it.tvgId }.toSet()) }
+            bytes.inputStream().use { input -> EpgParser.parse(input, channels.mapNotNull { it.tvgId }.toSet()) }
         }.getOrDefault(emptyMap())
     }
 
     suspend fun refreshEpg(active: PlaylistConfig, epgUrl: String?, channels: List<Channel>): Map<String, List<Program>> = withContext(Dispatchers.IO) {
-        if (epgUrl.isNullOrBlank() || !epgUrl.startsWith("https://", true) || channels.isEmpty()) return@withContext emptyMap()
-        val bytes = downloadBytes(epgUrl, maxBytes = 40 * 1024 * 1024, readTimeoutMs = 20_000)
-        atomicWrite(store.epgCache(active.id), bytes)
+        if (channels.isEmpty()) return@withContext emptyMap()
+        val request = PlaylistRequestResolver.epg(active, epgUrl) ?: return@withContext emptyMap()
+        val bytes = downloadBytes(request, maxBytes = 40 * 1024 * 1024, readTimeoutMs = 20_000)
+        store.writeEncrypted(store.epgCache(active.id), bytes)
         bytes.inputStream().use { EpgParser.parse(it, channels.mapNotNull { c -> c.tvgId }.toSet()) }
     }
 
-    suspend fun addPlaylist(name: String, url: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
-        require(name.trim().isNotEmpty()) { "Nombre requerido" }
-        require(url.startsWith("https://", ignoreCase = true)) { "La URL debe usar HTTPS" }
+    suspend fun addPlaylist(
+        name: String,
+        url: String,
+        username: String = "",
+        password: String = "",
+        authMode: PlaylistAuthMode = PlaylistAuthMode.NONE
+    ): List<PlaylistConfig> = withContext(Dispatchers.IO) {
+        val candidate = PlaylistConfig(
+            id = sha256("${name.trim()}|${System.nanoTime()}").take(16),
+            name = name.trim(),
+            url = url.trim(),
+            username = username.trim(),
+            password = password,
+            authMode = authMode,
+            active = false
+        )
+        PlaylistRequestResolver.validate(candidate)
         val current = store.ensureDefaults()
-        val id = sha256("${name.trim()}|${url.trim()}|${System.nanoTime()}").take(16)
-        val updated = current + PlaylistConfig(id, name.trim(), url.trim(), active = false)
+        val updated = current + candidate
         store.savePlaylists(updated)
         updated
     }
 
-    suspend fun updatePlaylist(id: String, name: String, url: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
+    suspend fun updatePlaylist(
+        id: String,
+        name: String,
+        url: String,
+        username: String,
+        password: String,
+        authMode: PlaylistAuthMode
+    ): List<PlaylistConfig> = withContext(Dispatchers.IO) {
         require(id != LocalStore.DEFAULT_ID) { "La lista predeterminada de TV Español+ está protegida y no se puede modificar" }
-        require(name.trim().isNotEmpty()) { "Nombre requerido" }
-        require(url.startsWith("https://", ignoreCase = true)) { "La URL debe usar HTTPS" }
-        val updated = store.ensureDefaults().map { if (it.id == id) it.copy(name = name.trim(), url = url.trim()) else it }
-        store.savePlaylists(updated); updated
+        val current = store.ensureDefaults()
+        val old = current.firstOrNull { it.id == id } ?: error("Lista no encontrada")
+        val candidate = old.copy(
+            name = name.trim(),
+            url = url.trim(),
+            username = username.trim(),
+            password = password,
+            authMode = authMode
+        )
+        PlaylistRequestResolver.validate(candidate)
+        val updated = current.map { if (it.id == id) candidate else it }
+        store.savePlaylists(updated)
+        store.deleteSensitiveCaches(id)
+        updated
     }
 
     suspend fun deletePlaylist(id: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
@@ -100,7 +129,7 @@ class PlaylistRepository(private val context: Context) {
         val remaining = current.filterNot { it.id == id }.toMutableList()
         if (wasActive && remaining.none { it.active }) remaining[0] = remaining[0].copy(active = true)
         store.savePlaylists(remaining)
-        store.playlistCache(id).delete(); store.epgCache(id).delete()
+        store.deleteSensitiveCaches(id)
         remaining
     }
 
@@ -125,28 +154,40 @@ class PlaylistRepository(private val context: Context) {
     }
 
     private fun loadCachedCatalog(active: PlaylistConfig): CachedData? {
-        val file = store.playlistCache(active.id)
-        if (!file.exists()) return null
-        return runCatching {
-            val parsed = M3uParser.parse(file.readText())
-            CachedData(parsed.channels, emptyMap(), parsed.epgUrl)
-        }.getOrNull()
+        val bytes = store.readEncrypted(store.playlistCache(active.id)) ?: return loadLegacyCachedCatalog(active)
+        return parseCached(active, bytes)
     }
 
-    private fun downloadText(url: String): String = downloadBytes(url, 8 * 1024 * 1024, readTimeoutMs = 12_000).toString(Charsets.UTF_8)
+    private fun loadLegacyCachedCatalog(active: PlaylistConfig): CachedData? {
+        val legacy = context.cacheDir.resolve("playlist_${active.id.replace(Regex("[^A-Za-z0-9_-]"), "_")}.m3u")
+        if (!legacy.exists()) return null
+        val bytes = runCatching { legacy.readBytes() }.getOrNull() ?: return null
+        runCatching { store.writeEncrypted(store.playlistCache(active.id), bytes); legacy.delete() }
+        return parseCached(active, bytes)
+    }
 
-    private fun downloadBytes(url: String, maxBytes: Int, readTimeoutMs: Int): ByteArray {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+    private fun parseCached(active: PlaylistConfig, bytes: ByteArray): CachedData? = runCatching {
+        val parsed = M3uParser.parse(bytes.toString(Charsets.UTF_8))
+        val epg = PlaylistRequestResolver.epg(active, parsed.epgUrl)?.url
+        CachedData(parsed.channels, emptyMap(), epg)
+    }.getOrNull()
+
+    private fun downloadText(request: PlaylistRequest): String =
+        downloadBytes(request, 8 * 1024 * 1024, readTimeoutMs = 12_000).toString(Charsets.UTF_8)
+
+    private fun downloadBytes(request: PlaylistRequest, maxBytes: Int, readTimeoutMs: Int): ByteArray {
+        val connection = (URL(request.url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 7_000
             readTimeout = readTimeoutMs
             instanceFollowRedirects = true
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.3 Android")
+            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.4 Android")
             setRequestProperty("Accept", "*/*")
+            request.authorizationHeader?.let { setRequestProperty("Authorization", it) }
         }
         try {
             val code = connection.responseCode
-            require(code in 200..299) { "Servidor respondió HTTP $code" }
+            require(code in 200..299) { "El servidor de la lista respondió HTTP $code" }
             val declared = connection.contentLengthLong
             require(declared <= maxBytes || declared < 0) { "Archivo demasiado grande" }
             return connection.inputStream.use { input ->
@@ -162,17 +203,13 @@ class PlaylistRepository(private val context: Context) {
                 }
                 out.toByteArray()
             }
-        } finally { connection.disconnect() }
+        } finally {
+            connection.disconnect()
+        }
     }
 
-    private fun atomicWrite(file: File, bytes: ByteArray) {
-        val tmp = File(file.parentFile, file.name + ".tmp")
-        tmp.writeBytes(bytes)
-        if (file.exists()) file.delete()
-        check(tmp.renameTo(file)) { "No se pudo guardar la caché" }
-    }
-
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
+    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
 }
 
 data class RepositorySnapshot(
