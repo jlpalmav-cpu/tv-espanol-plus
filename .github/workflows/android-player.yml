@@ -44,6 +44,27 @@ jobs:
         working-directory: android-player
         run: gradle --no-daemon assembleDebug
 
+      - name: Prepare initial field-test APK
+        working-directory: android-player
+        run: |
+          mkdir -p dist-alpha
+          cp app/build/outputs/apk/debug/app-debug.apk dist-alpha/TV_Espanol_Plus_Player-v1.0.0-ALPHA.apk
+          sha256sum dist-alpha/TV_Espanol_Plus_Player-v1.0.0-ALPHA.apk > dist-alpha/SHA256.txt
+          cat > dist-alpha/TEST_STATUS.txt <<'TXT'
+          TV Español+ Player v1.0.0 ALPHA
+          PASSED: unit tests + Android lint + APK build.
+          PENDING FOR FINAL VALIDATION: emulator smoke/instrumented test and real-device TV validation.
+          This package is intended for controlled field testing, not production release.
+          TXT
+
+      - name: Upload initial field-test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TV-Espanol-Plus-Player-v1.0.0-ALPHA
+          path: android-player/dist-alpha/*
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Emulator smoke tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -53,7 +74,7 @@ jobs:
           working-directory: android-player
           script: gradle --no-daemon connectedDebugAndroidTest
 
-      - name: Prepare deliverable
+      - name: Prepare validated deliverable
         working-directory: android-player
         run: |
           mkdir -p dist
@@ -61,8 +82,8 @@ jobs:
           sha256sum dist/TV_Espanol_Plus_Player-v1.0.0.apk > dist/SHA256.txt
           cat > dist/TEST_STATUS.txt <<'TXT'
           TV Español+ Player v1.0.0
-          Pipeline: unit tests + Android lint + APK build + emulator smoke tests.
-          Artifact is published only if all prior steps complete successfully.
+          PASSED: unit tests + Android lint + APK build + emulator smoke/instrumented tests.
+          Next validation layer: extended testing on physical Android TV hardware and varied network conditions.
           TXT
 
       - name: Upload validated APK
