@@ -11,7 +11,7 @@ on:
 jobs:
   test-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
-      - name: Unit tests
+      - name: Unit and stress tests
         working-directory: android-player
         run: gradle --no-daemon testDebugUnitTest
 
@@ -44,26 +44,9 @@ jobs:
         working-directory: android-player
         run: gradle --no-daemon assembleDebug
 
-      - name: Prepare initial field-test APK
+      - name: APK structure integrity
         working-directory: android-player
-        run: |
-          mkdir -p dist-beta
-          cp app/build/outputs/apk/debug/app-debug.apk dist-beta/TV_Espanol_Plus_Player-v1.2.0-BETA.apk
-          sha256sum dist-beta/TV_Espanol_Plus_Player-v1.2.0-BETA.apk > dist-beta/SHA256.txt
-          cat > dist-beta/TEST_STATUS.txt <<'TXT'
-          TV Español+ Player v1.2.0 BETA
-          PASSED BEFORE BETA ARTIFACT: unit tests + Android lint + APK build.
-          New in v1.2.0: Android safe areas, title-first content hierarchy, Honduras branding, exit next to settings, protected default playlist, exclusive content categories with counts, country folders with counts, no duplicates inside classification views, Super Search and dual view.
-          PENDING FOR FINAL VALIDATION: emulator smoke/instrumented test and extended physical-device validation.
-          TXT
-
-      - name: Upload initial field-test APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: TV-Espanol-Plus-Player-v1.2.0-BETA
-          path: android-player/dist-beta/*
-          if-no-files-found: error
-          retention-days: 30
+        run: unzip -t app/build/outputs/apk/debug/app-debug.apk
 
       - name: Emulator smoke tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -74,22 +57,23 @@ jobs:
           working-directory: android-player
           script: gradle --no-daemon connectedDebugAndroidTest
 
-      - name: Prepare validated deliverable
+      - name: Prepare validated v1.3.0 APK
         working-directory: android-player
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.2.0.apk
-          sha256sum dist/TV_Espanol_Plus_Player-v1.2.0.apk > dist/SHA256.txt
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.3.0.apk
+          sha256sum dist/TV_Espanol_Plus_Player-v1.3.0.apk > dist/SHA256.txt
           cat > dist/TEST_STATUS.txt <<'TXT'
-          TV Español+ Player v1.2.0
-          PASSED: unit tests + Android lint + APK build + emulator smoke/instrumented tests.
-          Next validation layer: extended physical-device testing, long-session zapping and dual-decoder capability across hardware.
+          TV Español+ Player v1.3.0
+          PASSED BEFORE PUBLICATION: unit/stress tests + Android lint + APK build + ZIP/APK integrity + API 35 emulator smoke/instrumented tests.
+          v1.3: non-blocking catalog startup with background EPG; automatic subcategories for large categories; strict one-result-per-channel search relevance; selectable audio and subtitle tracks with Spanish preference; protected default list; country folders; dual view; Android TV and mobile safe-area layouts.
+          Physical-device validation is still recommended for long-session zapping, weak Wi-Fi and dual-decoder differences between TV models.
           TXT
 
       - name: Upload validated APK
         uses: actions/upload-artifact@v4
         with:
-          name: TV-Espanol-Plus-Player-v1.2.0
+          name: TV-Espanol-Plus-Player-v1.3.0
           path: android-player/dist/*
           if-no-files-found: error
           retention-days: 30
