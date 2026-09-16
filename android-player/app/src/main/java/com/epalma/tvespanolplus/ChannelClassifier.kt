@@ -3,10 +3,14 @@ package com.epalma.tvespanolplus
 import java.util.Locale
 
 data class ContentCategory(val key: String, val title: String)
-
 data class CountryGroup(val name: String, val count: Int)
+data class SubcategoryGroup(val name: String, val count: Int, val category: String)
 
 object ChannelClassifier {
+    const val SUBCATEGORY_THRESHOLD = 60
+    private const val MIN_COUNTRY_FOLDER_SIZE = 3
+    const val OTHER_COUNTRIES = "Otros países"
+
     val categories = listOf(
         ContentCategory("sports", "Deportes"),
         ContentCategory("movies", "Películas"),
@@ -22,11 +26,7 @@ object ChannelClassifier {
         ContentCategory("other", "Otros")
     )
 
-    /**
-     * Every channel resolves to exactly one canonical content category.
-     * This intentionally prevents the same channel from appearing in several
-     * category grids at the same time.
-     */
+    /** Every channel resolves to exactly one canonical content category. */
     fun categoryFor(channel: Channel): String {
         val g = TextNormalizer.normalize(channel.group)
         return when {
@@ -54,6 +54,42 @@ object ChannelClassifier {
     fun categoryCounts(channels: List<Channel>): Map<String, Int> {
         val unique = channels.distinctBy { it.id }
         return categories.associate { it.title to unique.count { channel -> categoryFor(channel) == it.title } }
+    }
+
+    /**
+     * Large categories are divided into mutually-exclusive country folders.
+     * Tiny country groups are consolidated into "Otros países" so the user
+     * does not get dozens of one-channel folders. Every channel still belongs
+     * to exactly one subcategory inside its canonical category.
+     */
+    fun subcategoriesForCategory(channels: List<Channel>, title: String): List<SubcategoryGroup> {
+        val items = channelsForCategory(channels, title)
+        if (items.size < SUBCATEGORY_THRESHOLD) return emptyList()
+        val grouped = items.groupBy(::countryName)
+        val regular = grouped.filterValues { it.size >= MIN_COUNTRY_FOLDER_SIZE }
+        val otherCount = grouped.filterValues { it.size < MIN_COUNTRY_FOLDER_SIZE }.values.sumOf { it.size }
+        return buildList {
+            regular.entries
+                .sortedWith(compareBy<Map.Entry<String, List<Channel>>> {
+                    when (TextNormalizer.normalize(it.key)) {
+                        "honduras" -> 0
+                        "sin pais" -> 2
+                        else -> 1
+                    }
+                }.thenBy { TextNormalizer.normalize(it.key) })
+                .forEach { add(SubcategoryGroup(it.key, it.value.size, title)) }
+            if (otherCount > 0) add(SubcategoryGroup(OTHER_COUNTRIES, otherCount, title))
+        }
+    }
+
+    fun channelsForSubcategory(channels: List<Channel>, category: String, subcategory: String): List<Channel> {
+        val items = channelsForCategory(channels, category)
+        if (subcategory == OTHER_COUNTRIES) {
+            val grouped = items.groupBy(::countryName)
+            val smallCountries = grouped.filterValues { it.size < MIN_COUNTRY_FOLDER_SIZE }.keys
+            return items.filter { countryName(it) in smallCountries }
+        }
+        return items.filter { countryName(it) == subcategory }
     }
 
     fun countryName(channel: Channel): String {
