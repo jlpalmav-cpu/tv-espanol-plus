@@ -22,7 +22,8 @@ object SearchEngine {
             val channelText = buildString {
                 append(channel.name); append(' ')
                 append(channel.group); append(' ')
-                append(channel.country.orEmpty()); append(' ')
+                append(ChannelClassifier.categoryFor(channel)); append(' ')
+                append(ChannelClassifier.countryName(channel)); append(' ')
                 append(channel.language.orEmpty()); append(' ')
                 append(channel.tvgId.orEmpty())
             }
@@ -35,6 +36,8 @@ object SearchEngine {
 
             channel.tvgId?.let { id ->
                 programs[id].orEmpty().forEach { program ->
+                    // A program result must match the actual programme title/description,
+                    // not merely inherit a match from the channel metadata.
                     val programScore = relevance(q, qTokens, "${program.title} ${program.description.orEmpty()}")
                     if (programScore >= MATCH_THRESHOLD) {
                         val bucket = bucket(program, now)
@@ -66,32 +69,43 @@ object SearchEngine {
             .take(limit)
     }
 
-    fun search(
-        query: String,
-        channels: List<Channel>,
-        programs: Map<String, List<Program>>,
-        limit: Int
-    ): List<SearchHit> = search(query, channels, programs, System.currentTimeMillis(), limit)
+    fun search(query: String, channels: List<Channel>, programs: Map<String, List<Program>>, limit: Int): List<SearchHit> =
+        search(query, channels, programs, System.currentTimeMillis(), limit)
 
     private fun relevance(query: String, tokens: List<String>, text: String): Double {
         val norm = TextNormalizer.normalize(text)
+        if (norm.isBlank()) return 0.0
         if (norm == query) return 1.0
         if (norm.startsWith(query)) return 0.97
         if (norm.contains(query)) return 0.94
+
         val words = norm.split(' ').filter { it.isNotBlank() }
-        val tokenHits = tokens.count { qToken ->
-            words.any { word ->
-                word == qToken || word.startsWith(qToken) || TextNormalizer.fuzzySimilarity(qToken, word) >= tokenThreshold(qToken)
-            }
+        val tokenMatches = tokens.map { qToken ->
+            words.maxOfOrNull { word -> tokenSimilarity(qToken, word) } ?: 0.0
         }
-        val tokenScore = if (tokens.isEmpty()) 0.0 else tokenHits.toDouble() / tokens.size
-        val fuzzyValues = tokens.mapNotNull { qToken -> words.maxOfOrNull { TextNormalizer.fuzzySimilarity(qToken, it) } }
-        val bestTokenFuzzy = if (fuzzyValues.isEmpty()) 0.0 else fuzzyValues.average()
+        val matchedCount = tokenMatches.countIndexed { index, similarity -> similarity >= tokenThreshold(tokens[index]) }
+        val coverage = if (tokens.isEmpty()) 0.0 else matchedCount.toDouble() / tokens.size
+        val averageSimilarity = if (tokenMatches.isEmpty()) 0.0 else tokenMatches.average()
         val wholeFuzzy = TextNormalizer.fuzzySimilarity(query, norm)
-        return maxOf(tokenScore * 0.92, bestTokenFuzzy * 0.84, wholeFuzzy * 0.90)
+
+        // Multi-word searches should reflect the whole intent. A result that
+        // matches only one word of "noticias Honduras" must not outrank a true
+        // two-token match. Whole-phrase fuzzy matching remains available for
+        // misspellings such as "fc barcelos".
+        if (tokens.size >= 2 && coverage < 0.75 && wholeFuzzy < 0.82) return 0.0
+        if (tokens.size == 1 && coverage == 0.0 && wholeFuzzy < 0.72) return 0.0
+
+        return maxOf(coverage * 0.93, averageSimilarity * 0.86, wholeFuzzy * 0.90)
+    }
+
+    private fun tokenSimilarity(queryToken: String, word: String): Double = when {
+        word == queryToken -> 1.0
+        word.startsWith(queryToken) || queryToken.startsWith(word) -> 0.96
+        else -> TextNormalizer.fuzzySimilarity(queryToken, word)
     }
 
     private fun tokenThreshold(token: String): Double = when {
+        token.length <= 2 -> 1.0
         token.length <= 3 -> 0.92
         token.length <= 5 -> 0.80
         else -> 0.68
