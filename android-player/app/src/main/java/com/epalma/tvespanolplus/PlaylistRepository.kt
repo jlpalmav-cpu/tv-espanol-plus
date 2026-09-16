@@ -48,7 +48,7 @@ class PlaylistRepository(private val context: Context) {
         }.orEmpty()
 
         val now = System.currentTimeMillis()
-        val playlists = store.getPlaylists().map { if (it.id == active.id) it.copy(lastUpdatedEpochMs = now) else it }
+        val playlists = store.ensureDefaults().map { if (it.id == active.id) it.copy(lastUpdatedEpochMs = now) else it }
         store.savePlaylists(playlists)
         RefreshPayload(
             parsed.channels,
@@ -62,7 +62,7 @@ class PlaylistRepository(private val context: Context) {
     suspend fun addPlaylist(name: String, url: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
         require(name.trim().isNotEmpty()) { "Nombre requerido" }
         require(url.startsWith("https://", ignoreCase = true)) { "La URL debe usar HTTPS" }
-        val current = store.getPlaylists()
+        val current = store.ensureDefaults()
         val id = sha256("${name.trim()}|${url.trim()}|${System.nanoTime()}").take(16)
         val updated = current + PlaylistConfig(id, name.trim(), url.trim(), active = false)
         store.savePlaylists(updated)
@@ -70,14 +70,16 @@ class PlaylistRepository(private val context: Context) {
     }
 
     suspend fun updatePlaylist(id: String, name: String, url: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
+        require(id != LocalStore.DEFAULT_ID) { "La lista predeterminada de TV Español+ está protegida y no se puede modificar" }
         require(name.trim().isNotEmpty()) { "Nombre requerido" }
         require(url.startsWith("https://", ignoreCase = true)) { "La URL debe usar HTTPS" }
-        val updated = store.getPlaylists().map { if (it.id == id) it.copy(name = name.trim(), url = url.trim()) else it }
+        val updated = store.ensureDefaults().map { if (it.id == id) it.copy(name = name.trim(), url = url.trim()) else it }
         store.savePlaylists(updated); updated
     }
 
     suspend fun deletePlaylist(id: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
-        val current = store.getPlaylists()
+        require(id != LocalStore.DEFAULT_ID) { "La lista predeterminada de TV Español+ no se puede eliminar" }
+        val current = store.ensureDefaults()
         require(current.size > 1) { "Debe existir al menos una lista" }
         val wasActive = current.firstOrNull { it.id == id }?.active == true
         val remaining = current.filterNot { it.id == id }.toMutableList()
@@ -88,7 +90,8 @@ class PlaylistRepository(private val context: Context) {
     }
 
     suspend fun setActive(id: String): Pair<List<PlaylistConfig>, RepositorySnapshot> = withContext(Dispatchers.IO) {
-        val updated = store.getPlaylists().map { it.copy(active = it.id == id) }
+        val current = store.ensureDefaults()
+        val updated = current.map { it.copy(active = it.id == id) }
         store.savePlaylists(updated)
         val active = updated.first { it.active }
         val cached = loadCached(active)
@@ -132,7 +135,7 @@ class PlaylistRepository(private val context: Context) {
             connectTimeout = 7000; readTimeout = 12000
             instanceFollowRedirects = true
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.0 AndroidTV")
+            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.2 AndroidTV")
             setRequestProperty("Accept", "*/*")
         }
         try {
