@@ -15,13 +15,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val screen by vm.screen.collectAsState()
+            val filter by vm.filter.collectAsState()
             BackHandler(enabled = screen != Screen.HOME) {
                 when (screen) {
-                    Screen.PLAYER, Screen.DUAL, Screen.CHANNELS, Screen.SEARCH, Screen.PLAYLISTS, Screen.SETTINGS, Screen.ABOUT -> vm.go(Screen.HOME)
+                    Screen.CHANNELS -> if (filter.startsWith("País:")) vm.openCategory("Países") else vm.go(Screen.HOME)
+                    Screen.PLAYER, Screen.DUAL, Screen.SEARCH, Screen.PLAYLISTS, Screen.SETTINGS, Screen.ABOUT -> vm.go(Screen.HOME)
                     Screen.HOME -> Unit
                 }
             }
-            AdaptiveTVEspanolPlusRoot(vm = vm, onExit = { finishAffinity() })
+            TVEspanolPlusRootV2(vm = vm, onExit = { finishAffinity() })
         }
     }
 }
