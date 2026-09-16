@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
                     Screen.HOME -> Unit
                 }
             }
-            TVEspanolPlusRoot(vm = vm, onExit = { finishAffinity() })
+            AdaptiveTVEspanolPlusRoot(vm = vm, onExit = { finishAffinity() })
         }
     }
 }
