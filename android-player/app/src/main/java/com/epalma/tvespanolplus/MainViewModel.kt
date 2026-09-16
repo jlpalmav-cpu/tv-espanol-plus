@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = PlaylistRepository(app)
@@ -20,9 +21,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val ui: StateFlow<AppUiState> = _ui.asStateFlow()
     private val _screen = MutableStateFlow(Screen.HOME)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
-    private val _filter = MutableStateFlow("En vivo")
+    private val _filter = MutableStateFlow("TV general")
     val filter: StateFlow<String> = _filter.asStateFlow()
     private var searchJob: Job? = null
+    private var epgJob: Job? = null
     private var everConnected = false
 
     private val connectivity = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -39,15 +41,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update {
                 it.copy(
                     loading = snapshot.channels.isEmpty(),
-                    statusMessage = if (snapshot.channels.isEmpty()) "Preparando televisión…" else "Listo",
+                    statusMessage = if (snapshot.channels.isEmpty()) "Preparando canales…" else "Listo",
                     playlists = snapshot.playlists,
                     activePlaylist = snapshot.active,
                     channels = snapshot.channels,
-                    programs = snapshot.programs,
+                    programs = emptyMap(),
                     favorites = snapshot.favorites,
                     recentIds = snapshot.recents
                 )
             }
+            if (snapshot.channels.isNotEmpty()) syncEpg(snapshot.active, snapshot.epgUrl, snapshot.channels)
             refresh(silent = snapshot.channels.isNotEmpty())
         }
     }
@@ -60,26 +63,51 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val active = _ui.value.activePlaylist ?: return
         viewModelScope.launch {
             _ui.update { it.copy(refreshing = true, error = null, statusMessage = if (silent) it.statusMessage else "Actualizando canales…") }
-            runCatching { repo.refresh(active, _ui.value.channels) }
+            runCatching { withTimeout(16_000) { repo.refresh(active, _ui.value.channels) } }
                 .onSuccess { payload ->
+                    val resolvedActive = payload.playlists.firstOrNull { p -> p.active } ?: active
                     _ui.update {
                         it.copy(
                             loading = false,
                             refreshing = false,
                             statusMessage = payload.result.message,
                             channels = payload.channels,
-                            programs = payload.programs,
                             playlists = payload.playlists,
-                            activePlaylist = payload.playlists.firstOrNull { p -> p.active } ?: active,
+                            activePlaylist = resolvedActive,
                             lastRefresh = payload.result,
                             error = null
                         )
                     }
+                    syncEpg(resolvedActive, payload.epgUrl, payload.channels)
                     if (_ui.value.searchQuery.isNotBlank()) search(_ui.value.searchQuery)
                 }
                 .onFailure { error ->
-                    _ui.update { it.copy(loading = false, refreshing = false, statusMessage = "Usando la última lista disponible", error = error.message ?: "No se pudo actualizar") }
+                    _ui.update {
+                        it.copy(
+                            loading = false,
+                            refreshing = false,
+                            statusMessage = if (it.channels.isEmpty()) "No se pudo preparar la lista" else "Usando la última lista disponible",
+                            error = error.message ?: "No se pudo actualizar"
+                        )
+                    }
                 }
+        }
+    }
+
+    private fun syncEpg(active: PlaylistConfig, epgUrl: String?, channels: List<Channel>) {
+        epgJob?.cancel()
+        epgJob = viewModelScope.launch {
+            val playlistId = active.id
+            val cached = runCatching { repo.loadCachedPrograms(active, channels) }.getOrDefault(emptyMap())
+            if (cached.isNotEmpty() && _ui.value.activePlaylist?.id == playlistId) {
+                _ui.update { it.copy(programs = cached) }
+                if (_ui.value.searchQuery.isNotBlank()) search(_ui.value.searchQuery)
+            }
+            val fresh = runCatching { withTimeout(35_000) { repo.refreshEpg(active, epgUrl, channels) } }.getOrDefault(emptyMap())
+            if (fresh.isNotEmpty() && _ui.value.activePlaylist?.id == playlistId) {
+                _ui.update { it.copy(programs = fresh) }
+                if (_ui.value.searchQuery.isNotBlank()) search(_ui.value.searchQuery)
+            }
         }
     }
 
@@ -87,7 +115,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(280)
+            delay(260)
             val state = _ui.value
             val results = SearchEngine.search(query, state.channels, state.programs)
             _ui.update { it.copy(searchResults = results) }
@@ -150,7 +178,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             .onSuccess { list ->
                 val active = list.first { p -> p.active }
                 val (_, snap) = repo.setActive(active.id)
-                _ui.update { it.copy(playlists = list, activePlaylist = active, channels = snap.channels, programs = snap.programs, error = null) }
+                _ui.update { it.copy(playlists = list, activePlaylist = active, channels = snap.channels, programs = emptyMap(), error = null) }
+                syncEpg(active, snap.epgUrl, snap.channels)
             }
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
     }
@@ -158,7 +187,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun activatePlaylist(id: String) = viewModelScope.launch {
         runCatching { repo.setActive(id) }
             .onSuccess { (list, snap) ->
-                _ui.update { it.copy(playlists = list, activePlaylist = snap.active, channels = snap.channels, programs = snap.programs, error = null) }
+                _ui.update { it.copy(playlists = list, activePlaylist = snap.active, channels = snap.channels, programs = emptyMap(), error = null) }
+                if (snap.channels.isNotEmpty()) syncEpg(snap.active, snap.epgUrl, snap.channels)
                 refresh(silent = true)
             }
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
@@ -167,6 +197,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun clearError() { _ui.update { it.copy(error = null) } }
 
     override fun onCleared() {
+        epgJob?.cancel()
         runCatching { connectivity.unregisterNetworkCallback(networkCallback) }
         super.onCleared()
     }
