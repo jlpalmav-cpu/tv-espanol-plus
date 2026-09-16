@@ -25,6 +25,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val filter: StateFlow<String> = _filter.asStateFlow()
     private var searchJob: Job? = null
     private var epgJob: Job? = null
+    private var refreshJob: Job? = null
     private var everConnected = false
 
     private val connectivity = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -38,10 +39,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         runCatching { connectivity.registerDefaultNetworkCallback(networkCallback) }
         viewModelScope.launch {
             val snapshot = repo.initialize()
+            // Never trap the user behind a full-screen "preparing" state. The
+            // cached catalog (if any) becomes usable immediately and refresh runs
+            // independently with a hard timeout.
             _ui.update {
                 it.copy(
-                    loading = snapshot.channels.isEmpty(),
-                    statusMessage = if (snapshot.channels.isEmpty()) "Preparando canales…" else "Listo",
+                    loading = false,
+                    statusMessage = if (snapshot.channels.isEmpty()) "Preparando canales en segundo plano…" else "Listo",
                     playlists = snapshot.playlists,
                     activePlaylist = snapshot.active,
                     channels = snapshot.channels,
@@ -59,38 +63,46 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun openCategory(name: String) { _filter.value = name; _screen.value = Screen.CHANNELS }
 
     fun refresh(silent: Boolean = false) {
-        if (_ui.value.refreshing) return
+        if (refreshJob?.isActive == true) return
         val active = _ui.value.activePlaylist ?: return
-        viewModelScope.launch {
-            _ui.update { it.copy(refreshing = true, error = null, statusMessage = if (silent) it.statusMessage else "Actualizando canales…") }
-            runCatching { withTimeout(16_000) { repo.refresh(active, _ui.value.channels) } }
-                .onSuccess { payload ->
-                    val resolvedActive = payload.playlists.firstOrNull { p -> p.active } ?: active
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            refreshing = false,
-                            statusMessage = payload.result.message,
-                            channels = payload.channels,
-                            playlists = payload.playlists,
-                            activePlaylist = resolvedActive,
-                            lastRefresh = payload.result,
-                            error = null
-                        )
-                    }
-                    syncEpg(resolvedActive, payload.epgUrl, payload.channels)
-                    if (_ui.value.searchQuery.isNotBlank()) search(_ui.value.searchQuery)
+        refreshJob = viewModelScope.launch {
+            _ui.update {
+                it.copy(
+                    refreshing = true,
+                    error = null,
+                    statusMessage = if (silent) it.statusMessage else "Actualizando canales en segundo plano…"
+                )
+            }
+            try {
+                val payload = withTimeout(15_000) { repo.refresh(active, _ui.value.channels) }
+                val resolvedActive = payload.playlists.firstOrNull { p -> p.active } ?: active
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        statusMessage = payload.result.message,
+                        channels = payload.channels,
+                        playlists = payload.playlists,
+                        activePlaylist = resolvedActive,
+                        lastRefresh = payload.result,
+                        error = null
+                    )
                 }
-                .onFailure { error ->
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            refreshing = false,
-                            statusMessage = if (it.channels.isEmpty()) "No se pudo preparar la lista" else "Usando la última lista disponible",
-                            error = error.message ?: "No se pudo actualizar"
-                        )
-                    }
+                syncEpg(resolvedActive, payload.epgUrl, payload.channels)
+                if (_ui.value.searchQuery.isNotBlank()) search(_ui.value.searchQuery)
+            } catch (t: Throwable) {
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        statusMessage = if (it.channels.isEmpty()) "Sin catálogo todavía · puedes reintentar" else "Usando la última lista disponible",
+                        error = when (t) {
+                            is kotlinx.coroutines.TimeoutCancellationException -> "La actualización tardó demasiado. Se conservó la última lista disponible."
+                            else -> t.message ?: "No se pudo actualizar"
+                        }
+                    )
                 }
+            } finally {
+                _ui.update { it.copy(refreshing = false) }
+            }
         }
     }
 
@@ -115,7 +127,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(260)
+            delay(240)
             val state = _ui.value
             val results = SearchEngine.search(query, state.channels, state.programs)
             _ui.update { it.copy(searchResults = results) }
@@ -161,16 +173,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (remaining != null) play(remaining) else go(Screen.HOME)
     }
 
-    fun addPlaylist(name: String, url: String) = viewModelScope.launch {
-        runCatching { repo.addPlaylist(name, url) }
+    fun addPlaylistSecure(name: String, url: String, username: String, password: String, authMode: PlaylistAuthMode) = viewModelScope.launch {
+        runCatching { repo.addPlaylist(name, url, username, password, authMode) }
             .onSuccess { list -> _ui.update { it.copy(playlists = list, error = null) } }
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
     }
 
-    fun editPlaylist(id: String, name: String, url: String) = viewModelScope.launch {
-        runCatching { repo.updatePlaylist(id, name, url) }
+    fun editPlaylistSecure(id: String, name: String, url: String, username: String, password: String, authMode: PlaylistAuthMode) = viewModelScope.launch {
+        runCatching { repo.updatePlaylist(id, name, url, username, password, authMode) }
             .onSuccess { list -> _ui.update { it.copy(playlists = list, activePlaylist = list.firstOrNull { p -> p.active }, error = null) } }
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
+    }
+
+    // Backward-compatible entry points used by older composables; secure V5 UI uses the methods above.
+    fun addPlaylist(name: String, url: String) = addPlaylistSecure(name, url, "", "", PlaylistAuthMode.NONE)
+    fun editPlaylist(id: String, name: String, url: String) {
+        val current = _ui.value.playlists.firstOrNull { it.id == id } ?: return
+        editPlaylistSecure(id, name, url, current.username, current.password, current.authMode)
     }
 
     fun deletePlaylist(id: String) = viewModelScope.launch {
@@ -197,7 +216,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun clearError() { _ui.update { it.copy(error = null) } }
 
     override fun onCleared() {
+        searchJob?.cancel()
         epgJob?.cancel()
+        refreshJob?.cancel()
         runCatching { connectivity.unregisterNetworkCallback(networkCallback) }
         super.onCleared()
     }
