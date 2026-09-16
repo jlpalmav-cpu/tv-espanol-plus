@@ -21,10 +21,10 @@ class CoreLogicTest {
     }
 
     @Test fun m3uParsesAndDeduplicatesSources() {
-        val m3u = """#EXTM3U x-tvg-url=\"https://example.com/epg.xml.gz\"
-#EXTINF:-1 tvg-id=\"sports.1\" tvg-name=\"Canal Uno\" group-title=\"01 Deportes\",Canal Uno
+        val m3u = """#EXTM3U x-tvg-url="https://example.com/epg.xml.gz"
+#EXTINF:-1 tvg-id="sports.1" tvg-name="Canal Uno" group-title="01 Deportes",Canal Uno
 https://cdn.example.com/a.m3u8
-#EXTINF:-1 tvg-id=\"sports.1\" tvg-name=\"Canal Uno HD\" group-title=\"01 Deportes\",Canal Uno HD
+#EXTINF:-1 tvg-id="sports.1" tvg-name="Canal Uno HD" group-title="01 Deportes",Canal Uno HD
 https://cdn.example.com/b.m3u8
 """
         val result = M3uParser.parse(m3u)
