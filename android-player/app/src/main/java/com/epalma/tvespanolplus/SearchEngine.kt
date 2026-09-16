@@ -45,6 +45,13 @@ object SearchEngine {
             .take(limit)
     }
 
+    fun search(
+        query: String,
+        channels: List<Channel>,
+        programs: Map<String, List<Program>>,
+        limit: Int
+    ): List<SearchHit> = search(query, channels, programs, System.currentTimeMillis(), limit)
+
     private fun relevance(query: String, tokens: List<String>, text: String): Double {
         val norm = TextNormalizer.normalize(text)
         if (norm == query) return 1.0
