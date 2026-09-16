@@ -36,8 +36,6 @@ object SearchEngine {
 
             channel.tvgId?.let { id ->
                 programs[id].orEmpty().forEach { program ->
-                    // A program result must match the actual programme title/description,
-                    // not merely inherit a match from the channel metadata.
                     val programScore = relevance(q, qTokens, "${program.title} ${program.description.orEmpty()}")
                     if (programScore >= MATCH_THRESHOLD) {
                         val bucket = bucket(program, now)
@@ -83,15 +81,13 @@ object SearchEngine {
         val tokenMatches = tokens.map { qToken ->
             words.maxOfOrNull { word -> tokenSimilarity(qToken, word) } ?: 0.0
         }
-        val matchedCount = tokenMatches.countIndexed { index, similarity -> similarity >= tokenThreshold(tokens[index]) }
+        val matchedCount = tokenMatches.indices.count { index ->
+            tokenMatches[index] >= tokenThreshold(tokens[index])
+        }
         val coverage = if (tokens.isEmpty()) 0.0 else matchedCount.toDouble() / tokens.size
         val averageSimilarity = if (tokenMatches.isEmpty()) 0.0 else tokenMatches.average()
         val wholeFuzzy = TextNormalizer.fuzzySimilarity(query, norm)
 
-        // Multi-word searches should reflect the whole intent. A result that
-        // matches only one word of "noticias Honduras" must not outrank a true
-        // two-token match. Whole-phrase fuzzy matching remains available for
-        // misspellings such as "fc barcelos".
         if (tokens.size >= 2 && coverage < 0.75 && wholeFuzzy < 0.82) return 0.0
         if (tokens.size == 1 && coverage == 0.0 && wholeFuzzy < 0.72) return 0.0
 
