@@ -7,7 +7,7 @@ data class CountryGroup(val name: String, val count: Int)
 data class SubcategoryGroup(val name: String, val count: Int, val category: String)
 
 object ChannelClassifier {
-    const val SUBCATEGORY_THRESHOLD = 60
+    const val SUBCATEGORY_THRESHOLD = 40
     private const val MIN_COUNTRY_FOLDER_SIZE = 3
     const val OTHER_COUNTRIES = "Otros países"
 
