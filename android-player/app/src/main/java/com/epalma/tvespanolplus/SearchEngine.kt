@@ -5,6 +5,8 @@ import java.util.TimeZone
 import kotlin.math.abs
 
 object SearchEngine {
+    private const val MATCH_THRESHOLD = 0.50
+
     fun search(
         query: String,
         channels: List<Channel>,
@@ -15,33 +17,52 @@ object SearchEngine {
         val q = TextNormalizer.normalize(query)
         if (q.length < 2) return emptyList()
         val qTokens = TextNormalizer.tokens(q)
-        val hits = mutableListOf<SearchHit>()
-        for (channel in channels) {
+
+        val bestPerChannel = channels.distinctBy { it.id }.mapNotNull { channel ->
             val channelText = buildString {
-                append(channel.name); append(' '); append(channel.group); append(' ')
-                append(channel.country.orEmpty()); append(' '); append(channel.language.orEmpty()); append(' ')
+                append(channel.name); append(' ')
+                append(channel.group); append(' ')
+                append(channel.country.orEmpty()); append(' ')
+                append(channel.language.orEmpty()); append(' ')
                 append(channel.tvgId.orEmpty())
             }
             val channelScore = relevance(q, qTokens, channelText)
-            val channelPrograms = channel.tvgId?.let { programs[it] }.orEmpty()
-            var emittedProgram = false
-            for (program in channelPrograms) {
-                val programText = "${program.title} ${program.description.orEmpty()} ${channel.name} ${channel.group}"
-                val programScore = relevance(q, qTokens, programText)
-                val score = maxOf(channelScore * 0.80, programScore)
-                if (score >= 0.42) {
-                    val bucket = bucket(program, now)
-                    hits += SearchHit(channel, program, score + temporalBoost(program, bucket, now), bucket, reasonFor(bucket))
-                    emittedProgram = true
+            val candidates = mutableListOf<SearchHit>()
+
+            if (channelScore >= MATCH_THRESHOLD) {
+                candidates += SearchHit(channel, null, channelScore, TemporalBucket.CHANNEL_ONLY, "Canal relacionado")
+            }
+
+            channel.tvgId?.let { id ->
+                programs[id].orEmpty().forEach { program ->
+                    val programScore = relevance(q, qTokens, "${program.title} ${program.description.orEmpty()}")
+                    if (programScore >= MATCH_THRESHOLD) {
+                        val bucket = bucket(program, now)
+                        candidates += SearchHit(
+                            channel,
+                            program,
+                            programScore + temporalBoost(program, bucket, now),
+                            bucket,
+                            reasonFor(bucket)
+                        )
+                    }
                 }
             }
-            if (!emittedProgram && channelScore >= 0.42) {
-                hits += SearchHit(channel, null, channelScore, TemporalBucket.CHANNEL_ONLY, "Canal relacionado")
-            }
+
+            candidates.minWithOrNull(
+                compareBy<SearchHit> { it.temporalBucket.priority }
+                    .thenByDescending { it.score }
+                    .thenBy { proximity(it, now) }
+            )
         }
-        return hits
-            .sortedWith(compareBy<SearchHit> { it.temporalBucket.priority }.thenByDescending { it.score }.thenBy { proximity(it, now) })
-            .distinctBy { "${it.channel.id}:${it.program?.startEpochMs ?: 0L}:${it.program?.title ?: "channel"}" }
+
+        return bestPerChannel
+            .sortedWith(
+                compareBy<SearchHit> { it.temporalBucket.priority }
+                    .thenByDescending { it.score }
+                    .thenBy { proximity(it, now) }
+                    .thenBy { TextNormalizer.normalize(it.channel.name) }
+            )
             .take(limit)
     }
 
@@ -55,14 +76,25 @@ object SearchEngine {
     private fun relevance(query: String, tokens: List<String>, text: String): Double {
         val norm = TextNormalizer.normalize(text)
         if (norm == query) return 1.0
-        if (norm.startsWith(query)) return 0.96
-        if (norm.contains(query)) return 0.92
-        val tokenHits = tokens.count { norm.contains(it) }
-        val tokenScore = if (tokens.isEmpty()) 0.0 else tokenHits.toDouble() / tokens.size
+        if (norm.startsWith(query)) return 0.97
+        if (norm.contains(query)) return 0.94
         val words = norm.split(' ').filter { it.isNotBlank() }
-        val bestFuzzy = words.maxOfOrNull { TextNormalizer.fuzzySimilarity(query, it) } ?: 0.0
+        val tokenHits = tokens.count { qToken ->
+            words.any { word ->
+                word == qToken || word.startsWith(qToken) || TextNormalizer.fuzzySimilarity(qToken, word) >= tokenThreshold(qToken)
+            }
+        }
+        val tokenScore = if (tokens.isEmpty()) 0.0 else tokenHits.toDouble() / tokens.size
+        val fuzzyValues = tokens.mapNotNull { qToken -> words.maxOfOrNull { TextNormalizer.fuzzySimilarity(qToken, it) } }
+        val bestTokenFuzzy = if (fuzzyValues.isEmpty()) 0.0 else fuzzyValues.average()
         val wholeFuzzy = TextNormalizer.fuzzySimilarity(query, norm)
-        return maxOf(tokenScore * 0.88, bestFuzzy * 0.82, wholeFuzzy * 0.9)
+        return maxOf(tokenScore * 0.92, bestTokenFuzzy * 0.84, wholeFuzzy * 0.90)
+    }
+
+    private fun tokenThreshold(token: String): Double = when {
+        token.length <= 3 -> 0.92
+        token.length <= 5 -> 0.80
+        else -> 0.68
     }
 
     private fun bucket(program: Program, now: Long): TemporalBucket {
