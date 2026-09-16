@@ -1,0 +1,72 @@
+name: TV Espanol Plus - Test and Build APK
+
+on:
+  push:
+    branches: ["tv-player-v1"]
+    paths:
+      - "android-player/**"
+      - ".github/workflows/android-player.yml"
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Unit tests
+        working-directory: android-player
+        run: gradle --no-daemon testDebugUnitTest
+
+      - name: Android lint
+        working-directory: android-player
+        run: gradle --no-daemon lintDebug
+
+      - name: Assemble debug APK
+        working-directory: android-player
+        run: gradle --no-daemon assembleDebug
+
+      - name: Emulator smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          disable-animations: true
+          working-directory: android-player
+          script: gradle --no-daemon connectedDebugAndroidTest
+
+      - name: Prepare deliverable
+        working-directory: android-player
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.0.0.apk
+          sha256sum dist/TV_Espanol_Plus_Player-v1.0.0.apk > dist/SHA256.txt
+          cat > dist/TEST_STATUS.txt <<'TXT'
+          TV Español+ Player v1.0.0
+          Pipeline: unit tests + Android lint + APK build + emulator smoke tests.
+          Artifact is published only if all prior steps complete successfully.
+          TXT
+
+      - name: Upload validated APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TV-Espanol-Plus-Player-v1.0.0
+          path: android-player/dist/*
+          if-no-files-found: error
+          retention-days: 30
