@@ -14,18 +14,22 @@ class PlaylistRepository(private val context: Context) {
     suspend fun initialize(): RepositorySnapshot = withContext(Dispatchers.IO) {
         val playlists = store.ensureDefaults()
         val active = playlists.firstOrNull { it.active } ?: playlists.first()
-        val cached = loadCached(active)
+        val cached = loadCachedCatalog(active)
         RepositorySnapshot(
             playlists = playlists,
             active = active,
             channels = cached?.channels.orEmpty(),
-            programs = cached?.programs.orEmpty(),
+            programs = emptyMap(),
             favorites = store.favorites(),
             recents = store.recents(),
             epgUrl = cached?.epgUrl
         )
     }
 
+    /**
+     * Refreshes only the M3U catalog. EPG download/parsing is intentionally
+     * excluded so the Home screen never waits for a large XMLTV file.
+     */
     suspend fun refresh(active: PlaylistConfig, previousChannels: List<Channel>): RefreshPayload = withContext(Dispatchers.IO) {
         val text = downloadText(active.url)
         val parsed = M3uParser.parse(text)
@@ -43,20 +47,31 @@ class PlaylistRepository(private val context: Context) {
             a != null && b != null && (a.sources.map { it.url } != b.sources.map { it.url } || a.name != b.name || a.group != b.group)
         }
 
-        val programs = parsed.epgUrl?.let { epgUrl ->
-            runCatching { refreshEpg(active.id, epgUrl, parsed.channels) }.getOrDefault(emptyMap())
-        }.orEmpty()
-
         val now = System.currentTimeMillis()
         val playlists = store.ensureDefaults().map { if (it.id == active.id) it.copy(lastUpdatedEpochMs = now) else it }
         store.savePlaylists(playlists)
         RefreshPayload(
-            parsed.channels,
-            programs,
-            parsed.epgUrl,
-            playlists,
-            RefreshResult(true, if (added + removed + changed == 0) "Lista al día" else "Lista actualizada", added, removed, changed, parsed.channels.size)
+            channels = parsed.channels,
+            programs = emptyMap(),
+            epgUrl = parsed.epgUrl,
+            playlists = playlists,
+            result = RefreshResult(true, if (added + removed + changed == 0) "Lista al día" else "Lista actualizada", added, removed, changed, parsed.channels.size)
         )
+    }
+
+    suspend fun loadCachedPrograms(active: PlaylistConfig, channels: List<Channel>): Map<String, List<Program>> = withContext(Dispatchers.IO) {
+        val file = store.epgCache(active.id)
+        if (!file.exists() || channels.isEmpty()) return@withContext emptyMap()
+        runCatching {
+            file.inputStream().use { input -> EpgParser.parse(input, channels.mapNotNull { it.tvgId }.toSet()) }
+        }.getOrDefault(emptyMap())
+    }
+
+    suspend fun refreshEpg(active: PlaylistConfig, epgUrl: String?, channels: List<Channel>): Map<String, List<Program>> = withContext(Dispatchers.IO) {
+        if (epgUrl.isNullOrBlank() || !epgUrl.startsWith("https://", true) || channels.isEmpty()) return@withContext emptyMap()
+        val bytes = downloadBytes(epgUrl, maxBytes = 40 * 1024 * 1024, readTimeoutMs = 20_000)
+        atomicWrite(store.epgCache(active.id), bytes)
+        bytes.inputStream().use { EpgParser.parse(it, channels.mapNotNull { c -> c.tvgId }.toSet()) }
     }
 
     suspend fun addPlaylist(name: String, url: String): List<PlaylistConfig> = withContext(Dispatchers.IO) {
@@ -94,8 +109,8 @@ class PlaylistRepository(private val context: Context) {
         val updated = current.map { it.copy(active = it.id == id) }
         store.savePlaylists(updated)
         val active = updated.first { it.active }
-        val cached = loadCached(active)
-        updated to RepositorySnapshot(updated, active, cached?.channels.orEmpty(), cached?.programs.orEmpty(), store.favorites(), store.recents(), cached?.epgUrl)
+        val cached = loadCachedCatalog(active)
+        updated to RepositorySnapshot(updated, active, cached?.channels.orEmpty(), emptyMap(), store.favorites(), store.recents(), cached?.epgUrl)
     }
 
     suspend fun toggleFavorite(channelId: String): Set<String> = withContext(Dispatchers.IO) {
@@ -109,33 +124,24 @@ class PlaylistRepository(private val context: Context) {
         store.saveRecents(updated); updated
     }
 
-    private fun loadCached(active: PlaylistConfig): CachedData? {
+    private fun loadCachedCatalog(active: PlaylistConfig): CachedData? {
         val file = store.playlistCache(active.id)
         if (!file.exists()) return null
         return runCatching {
             val parsed = M3uParser.parse(file.readText())
-            val programs = if (store.epgCache(active.id).exists()) {
-                store.epgCache(active.id).inputStream().use { input -> EpgParser.parse(input, parsed.channels.mapNotNull { it.tvgId }.toSet()) }
-            } else emptyMap()
-            CachedData(parsed.channels, programs, parsed.epgUrl)
+            CachedData(parsed.channels, emptyMap(), parsed.epgUrl)
         }.getOrNull()
     }
 
-    private fun refreshEpg(id: String, epgUrl: String, channels: List<Channel>): Map<String, List<Program>> {
-        if (!epgUrl.startsWith("https://", true)) return emptyMap()
-        val bytes = downloadBytes(epgUrl, maxBytes = 40 * 1024 * 1024)
-        atomicWrite(store.epgCache(id), bytes)
-        return bytes.inputStream().use { EpgParser.parse(it, channels.mapNotNull { c -> c.tvgId }.toSet()) }
-    }
+    private fun downloadText(url: String): String = downloadBytes(url, 8 * 1024 * 1024, readTimeoutMs = 12_000).toString(Charsets.UTF_8)
 
-    private fun downloadText(url: String): String = downloadBytes(url, 8 * 1024 * 1024).toString(Charsets.UTF_8)
-
-    private fun downloadBytes(url: String, maxBytes: Int): ByteArray {
+    private fun downloadBytes(url: String, maxBytes: Int, readTimeoutMs: Int): ByteArray {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 7000; readTimeout = 12000
+            connectTimeout = 7_000
+            readTimeout = readTimeoutMs
             instanceFollowRedirects = true
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.2 AndroidTV")
+            setRequestProperty("User-Agent", "TV-Espanol-Plus/1.3 Android")
             setRequestProperty("Accept", "*/*")
         }
         try {
