@@ -1,6 +1,5 @@
 package com.epalma.tvespanolplus
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,6 +12,6 @@ class AppSmokeTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
     @Test fun appShowsBrandWithoutLogin() {
-        rule.onNode(hasContentDescription("TV Español+"), useUnmergedTree = true).assertExists()
+        rule.onNode(hasContentDescription("TV Español+"), useUnmergedTree = true).fetchSemanticsNode()
     }
 }
