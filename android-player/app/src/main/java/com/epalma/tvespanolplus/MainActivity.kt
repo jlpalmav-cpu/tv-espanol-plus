@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
                     Screen.HOME -> Unit
                 }
             }
-            TVEspanolPlusRootV2(vm = vm, onExit = { finishAffinity() })
+            TVEspanolPlusRootV3(vm = vm, onExit = { finishAffinity() })
         }
     }
 }
