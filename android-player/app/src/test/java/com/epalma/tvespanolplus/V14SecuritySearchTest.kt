@@ -2,6 +2,7 @@ package com.epalma.tvespanolplus
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,6 +33,7 @@ class V14SecuritySearchTest {
         assertFalse(safe.contains("user@example.com"))
         assertFalse(safe.contains("SuperSecret"))
         assertFalse(p.toString().contains("secret.example"))
+        assertFalse(p.toString().contains("user@example.com"))
         assertFalse(p.toString().contains("SuperSecret"))
     }
 
@@ -49,6 +51,13 @@ class V14SecuritySearchTest {
         PlaylistRequestResolver.validate(
             PlaylistConfig("x", "Insegura", "http://iptv.example", "user", "pass", PlaylistAuthMode.XTREAM)
         )
+    }
+
+    @Test fun basicCredentialsAreNeverSentToCleartextEpg() {
+        val p = PlaylistConfig("x", "Privada", "https://iptv.example/list.m3u", "user", "pass", PlaylistAuthMode.BASIC)
+        assertNull(PlaylistRequestResolver.epg(p, "http://iptv.example/guide.xml"))
+        val secure = PlaylistRequestResolver.epg(p, "https://iptv.example/guide.xml")
+        assertTrue(secure?.authorizationHeader?.startsWith("Basic ") == true)
     }
 
     @Test fun multiWordSearchHonorsWholeQuery() {
