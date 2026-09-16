@@ -18,12 +18,16 @@ class MainActivity : ComponentActivity() {
             val filter by vm.filter.collectAsState()
             BackHandler(enabled = screen != Screen.HOME) {
                 when (screen) {
-                    Screen.CHANNELS -> if (filter.startsWith("País:")) vm.openCategory("Países") else vm.go(Screen.HOME)
+                    Screen.CHANNELS -> when {
+                        filter.startsWith("País:") -> vm.openCategory("Países")
+                        filter.startsWith("Subcat:") -> vm.openCategory(filter.removePrefix("Subcat:").substringBefore('|'))
+                        else -> vm.go(Screen.HOME)
+                    }
                     Screen.PLAYER, Screen.DUAL, Screen.SEARCH, Screen.PLAYLISTS, Screen.SETTINGS, Screen.ABOUT -> vm.go(Screen.HOME)
                     Screen.HOME -> Unit
                 }
             }
-            TVEspanolPlusRootV3(vm = vm, onExit = { finishAffinity() })
+            TVEspanolPlusRootV4(vm = vm, onExit = { finishAffinity() })
         }
     }
 }
