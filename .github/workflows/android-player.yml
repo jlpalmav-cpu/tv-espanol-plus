@@ -56,16 +56,18 @@ jobs:
           disable-animations: true
           working-directory: android-player
           script: |
-            set -euo pipefail
+            set -eu
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb logcat -c
             adb shell am force-stop com.epalma.tvespanolplus
-            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
+            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity > launch.txt
+            cat launch.txt
             grep -q "Status: ok" launch.txt
             sleep 8
             PID="$(adb shell pidof com.epalma.tvespanolplus | tr -d '\r')"
             test -n "$PID"
-            if adb logcat -d -t 400 | grep -E "FATAL EXCEPTION|Process: com\.epalma\.tvespanolplus"; then
+            LOGS="$(adb logcat -d -t 400)"
+            if echo "$LOGS" | grep -E "FATAL EXCEPTION|Process: com\.epalma\.tvespanolplus"; then
               echo "Application crash detected during emulator smoke test"
               exit 1
             fi
