@@ -1,12 +1,21 @@
 package com.epalma.tvespanolplus
 
+enum class PlaylistAuthMode { NONE, BASIC, XTREAM }
+
 data class PlaylistConfig(
     val id: String,
     val name: String,
     val url: String,
+    val username: String = "",
+    val password: String = "",
+    val authMode: PlaylistAuthMode = PlaylistAuthMode.NONE,
     val active: Boolean = false,
     val lastUpdatedEpochMs: Long = 0L
-)
+) {
+    // Never expose URL, username or password through accidental logs/debug toString().
+    override fun toString(): String =
+        "PlaylistConfig(id=$id,name=$name,authMode=$authMode,active=$active,lastUpdatedEpochMs=$lastUpdatedEpochMs)"
+}
 
 data class StreamSource(
     val url: String,
