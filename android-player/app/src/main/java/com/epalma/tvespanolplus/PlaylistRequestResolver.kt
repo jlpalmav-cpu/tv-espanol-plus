@@ -13,7 +13,7 @@ data class PlaylistRequest(
 object PlaylistRequestResolver {
     fun validate(config: PlaylistConfig) {
         require(config.name.trim().isNotEmpty()) { "Nombre requerido" }
-        val scheme = runCatching { URI(config.url.trim()).scheme?.lowercase() }.getOrNull()
+        val scheme = scheme(config.url)
         require(scheme == "https" || scheme == "http") { "La URL debe usar HTTP o HTTPS" }
         if (config.authMode != PlaylistAuthMode.NONE || config.username.isNotBlank() || config.password.isNotBlank()) {
             require(scheme == "https") { "Por seguridad, las listas con usuario o contraseña deben usar HTTPS" }
@@ -39,12 +39,19 @@ object PlaylistRequestResolver {
     }
 
     fun epg(config: PlaylistConfig, advertisedUrl: String?): PlaylistRequest? {
+        validate(config)
         val advertised = advertisedUrl?.trim().orEmpty()
         if (advertised.isNotBlank()) {
-            val request = if (config.authMode == PlaylistAuthMode.BASIC) {
+            val epgScheme = scheme(advertised)
+            if (epgScheme !in setOf("http", "https")) return null
+            // Never send credentials, nor follow credential-bearing list context,
+            // over cleartext EPG transport.
+            if (config.authMode != PlaylistAuthMode.NONE && epgScheme != "https") return null
+            return if (config.authMode == PlaylistAuthMode.BASIC) {
                 PlaylistRequest(advertised, basic(config.username, config.password))
-            } else PlaylistRequest(advertised)
-            return request.takeIf { isHttp(it.url) }
+            } else {
+                PlaylistRequest(advertised)
+            }
         }
         if (config.authMode == PlaylistAuthMode.XTREAM) {
             return PlaylistRequest(
@@ -67,7 +74,5 @@ object PlaylistRequestResolver {
     }
 
     private fun enc(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8.name())
-    private fun isHttp(value: String): Boolean = runCatching {
-        URI(value).scheme?.lowercase() in setOf("http", "https")
-    }.getOrDefault(false)
+    private fun scheme(value: String): String? = runCatching { URI(value.trim()).scheme?.lowercase() }.getOrNull()
 }
