@@ -14,7 +14,7 @@ class LocalStore(private val context: Context) {
     companion object {
         const val DEFAULT_NAME = "edwinpalma@hotmail.com"
         const val DEFAULT_URL = "https://raw.githubusercontent.com/jlpalmav-cpu/tv-espanol-plus/main/TV_Espanol_Plus_VERIFICADA.m3u"
-        private const val DEFAULT_ID = "default-edwinpalma"
+        const val DEFAULT_ID = "default-edwinpalma"
         private val PLAYLISTS = stringPreferencesKey("playlists_json")
         private val FAVORITES = stringPreferencesKey("favorites_json")
         private val RECENTS = stringPreferencesKey("recents_json")
@@ -22,10 +22,26 @@ class LocalStore(private val context: Context) {
 
     suspend fun ensureDefaults(): List<PlaylistConfig> {
         val existing = getPlaylists()
-        if (existing.isNotEmpty()) return existing
-        val initial = listOf(PlaylistConfig(DEFAULT_ID, DEFAULT_NAME, DEFAULT_URL, active = true))
-        savePlaylists(initial)
-        return initial
+        val hasDefault = existing.any { it.id == DEFAULT_ID }
+        val normalized = existing.map {
+            if (it.id == DEFAULT_ID) it.copy(name = DEFAULT_NAME, url = DEFAULT_URL) else it
+        }.toMutableList()
+
+        if (!hasDefault) {
+            val makeActive = normalized.none { it.active }
+            normalized.add(0, PlaylistConfig(DEFAULT_ID, DEFAULT_NAME, DEFAULT_URL, active = makeActive))
+        }
+
+        if (normalized.isEmpty()) {
+            normalized += PlaylistConfig(DEFAULT_ID, DEFAULT_NAME, DEFAULT_URL, active = true)
+        }
+
+        if (normalized.none { it.active }) {
+            normalized[0] = normalized[0].copy(active = true)
+        }
+
+        if (existing != normalized) savePlaylists(normalized)
+        return normalized
     }
 
     suspend fun getPlaylists(): List<PlaylistConfig> {
