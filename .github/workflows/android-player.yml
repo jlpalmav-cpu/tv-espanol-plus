@@ -48,20 +48,19 @@ jobs:
         working-directory: android-player
         run: |
           mkdir -p dist-beta
-          cp app/build/outputs/apk/debug/app-debug.apk dist-beta/TV_Espanol_Plus_Player-v1.1.0-BETA.apk
-          sha256sum dist-beta/TV_Espanol_Plus_Player-v1.1.0-BETA.apk > dist-beta/SHA256.txt
+          cp app/build/outputs/apk/debug/app-debug.apk dist-beta/TV_Espanol_Plus_Player-v1.2.0-BETA.apk
+          sha256sum dist-beta/TV_Espanol_Plus_Player-v1.2.0-BETA.apk > dist-beta/SHA256.txt
           cat > dist-beta/TEST_STATUS.txt <<'TXT'
-          TV Español+ Player v1.1.0 BETA
-          Adaptive Android TV + Google TV + Android mobile UI.
-          PASSED: unit tests + Android lint + APK build.
-          Includes contextual live home, categories without duplicate En vivo, Super Search, favorites, recents, M3U/EPG, refresh, failover and dual view with one search per pane.
+          TV Español+ Player v1.2.0 BETA
+          PASSED BEFORE BETA ARTIFACT: unit tests + Android lint + APK build.
+          New in v1.2.0: Android safe areas, title-first content hierarchy, Honduras branding, exit next to settings, protected default playlist, exclusive content categories with counts, country folders with counts, no duplicates inside classification views, Super Search and dual view.
           PENDING FOR FINAL VALIDATION: emulator smoke/instrumented test and extended physical-device validation.
           TXT
 
       - name: Upload initial field-test APK
         uses: actions/upload-artifact@v4
         with:
-          name: TV-Espanol-Plus-Player-v1.1.0-BETA
+          name: TV-Espanol-Plus-Player-v1.2.0-BETA
           path: android-player/dist-beta/*
           if-no-files-found: error
           retention-days: 30
@@ -79,19 +78,18 @@ jobs:
         working-directory: android-player
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.1.0.apk
-          sha256sum dist/TV_Espanol_Plus_Player-v1.1.0.apk > dist/SHA256.txt
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.2.0.apk
+          sha256sum dist/TV_Espanol_Plus_Player-v1.2.0.apk > dist/SHA256.txt
           cat > dist/TEST_STATUS.txt <<'TXT'
-          TV Español+ Player v1.1.0
+          TV Español+ Player v1.2.0
           PASSED: unit tests + Android lint + APK build + emulator smoke/instrumented tests.
-          Adaptive layouts support Android mobile portrait/landscape plus Android TV/Google TV.
           Next validation layer: extended physical-device testing, long-session zapping and dual-decoder capability across hardware.
           TXT
 
       - name: Upload validated APK
         uses: actions/upload-artifact@v4
         with:
-          name: TV-Espanol-Plus-Player-v1.1.0
+          name: TV-Espanol-Plus-Player-v1.2.0
           path: android-player/dist/*
           if-no-files-found: error
           retention-days: 30
