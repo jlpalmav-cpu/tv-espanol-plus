@@ -76,3 +76,5 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
+
+// TV Español+ v1.5.0 CI validation trigger.
