@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,16 +14,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = PlaylistRepository(app)
+    private val preferenceStore = AppPreferenceStore(app)
+
     private val _ui = MutableStateFlow(AppUiState())
     val ui: StateFlow<AppUiState> = _ui.asStateFlow()
+
     private val _screen = MutableStateFlow(Screen.HOME)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
+
     private val _filter = MutableStateFlow("TV general")
     val filter: StateFlow<String> = _filter.asStateFlow()
+
+    private val _preferences = MutableStateFlow(preferenceStore.load())
+    val preferences: StateFlow<UserPreferences> = _preferences.asStateFlow()
+
+    private val _parentalGate = MutableStateFlow<ParentalGate?>(null)
+    val parentalGate: StateFlow<ParentalGate?> = _parentalGate.asStateFlow()
+
+    private val _parentalUnlocked = MutableStateFlow(false)
+    val parentalUnlocked: StateFlow<Boolean> = _parentalUnlocked.asStateFlow()
+
     private var searchJob: Job? = null
     private var epgJob: Job? = null
     private var refreshJob: Job? = null
@@ -38,29 +54,55 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     init {
         runCatching { connectivity.registerDefaultNetworkCallback(networkCallback) }
         viewModelScope.launch {
-            val snapshot = repo.initialize()
-            // Never trap the user behind a full-screen "preparing" state. The
-            // cached catalog (if any) becomes usable immediately and refresh runs
-            // independently with a hard timeout.
-            _ui.update {
-                it.copy(
-                    loading = false,
-                    statusMessage = if (snapshot.channels.isEmpty()) "Preparando canales en segundo plano…" else "Listo",
-                    playlists = snapshot.playlists,
-                    activePlaylist = snapshot.active,
-                    channels = snapshot.channels,
-                    programs = emptyMap(),
-                    favorites = snapshot.favorites,
-                    recentIds = snapshot.recents
-                )
-            }
-            if (snapshot.channels.isNotEmpty()) syncEpg(snapshot.active, snapshot.epgUrl, snapshot.channels)
-            refresh(silent = snapshot.channels.isNotEmpty())
+            runCatching { repo.initialize() }
+                .onSuccess { snapshot ->
+                    _ui.update {
+                        it.copy(
+                            loading = false,
+                            statusMessage = if (snapshot.channels.isEmpty()) "Preparando canales en segundo plano…" else "Listo",
+                            playlists = snapshot.playlists,
+                            activePlaylist = snapshot.active,
+                            channels = snapshot.channels,
+                            programs = emptyMap(),
+                            favorites = snapshot.favorites,
+                            recentIds = snapshot.recents,
+                            error = null
+                        )
+                    }
+                    if (snapshot.channels.isNotEmpty()) syncEpg(snapshot.active, snapshot.epgUrl, snapshot.channels)
+                    refresh(silent = snapshot.channels.isNotEmpty())
+                }
+                .onFailure { error ->
+                    _ui.update {
+                        it.copy(
+                            loading = false,
+                            statusMessage = "La app inició en modo recuperación",
+                            error = "No se pudo preparar el catálogo local: ${error.message ?: "error desconocido"}"
+                        )
+                    }
+                }
         }
     }
 
     fun go(screen: Screen) { _screen.value = screen }
-    fun openCategory(name: String) { _filter.value = name; _screen.value = Screen.CHANNELS }
+
+    fun openCategory(name: String) {
+        val prefs = _preferences.value
+        if (!_parentalUnlocked.value && ParentalPolicy.isRestrictedCategory(name, prefs)) {
+            _parentalGate.value = ParentalGate(
+                title = "Contenido protegido",
+                message = "Ingresa el PIN parental para abrir esta sección.",
+                pendingCategory = name
+            )
+            return
+        }
+        openCategoryUnlocked(name)
+    }
+
+    private fun openCategoryUnlocked(name: String) {
+        _filter.value = name
+        _screen.value = Screen.CHANNELS
+    }
 
     fun refresh(silent: Boolean = false) {
         if (refreshJob?.isActive == true) return
@@ -127,16 +169,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(240)
+            delay(170)
             val state = _ui.value
-            val results = SearchEngine.search(query, state.channels, state.programs)
-            _ui.update { it.copy(searchResults = results) }
+            val results = withContext(Dispatchers.Default) {
+                SearchEngine.search(query, state.channels, state.programs)
+            }
+            if (_ui.value.searchQuery == query) _ui.update { it.copy(searchResults = results) }
         }
     }
 
     fun openSearch() { _screen.value = Screen.SEARCH }
 
     fun play(channel: Channel) {
+        val prefs = _preferences.value
+        if (!_parentalUnlocked.value && ParentalPolicy.isRestrictedChannel(channel, prefs)) {
+            _parentalGate.value = ParentalGate(
+                title = "Canal protegido",
+                message = "Ingresa el PIN parental para reproducir ${channel.name}.",
+                pendingChannel = channel
+            )
+            return
+        }
+        playUnlocked(channel)
+    }
+
+    private fun playUnlocked(channel: Channel) {
         _ui.update { it.copy(selectedChannel = channel) }
         _screen.value = Screen.PLAYER
         viewModelScope.launch {
@@ -153,11 +210,39 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startDual(base: Channel) {
+        val prefs = _preferences.value
+        if (!_parentalUnlocked.value && ParentalPolicy.isRestrictedChannel(base, prefs)) {
+            _parentalGate.value = ParentalGate(
+                title = "Canal protegido",
+                message = "Ingresa el PIN parental antes de usar Vista doble.",
+                pendingChannel = base,
+                pendingStartDual = true
+            )
+            return
+        }
+        startDualUnlocked(base)
+    }
+
+    private fun startDualUnlocked(base: Channel) {
         _ui.update { it.copy(dualLeft = base, dualRight = null, dualAudioSide = DualSide.LEFT) }
         _screen.value = Screen.DUAL
     }
 
     fun setDualChannel(side: DualSide, channel: Channel) {
+        val prefs = _preferences.value
+        if (!_parentalUnlocked.value && ParentalPolicy.isRestrictedChannel(channel, prefs)) {
+            _parentalGate.value = ParentalGate(
+                title = "Canal protegido",
+                message = "Ingresa el PIN parental para agregar este canal a Vista doble.",
+                pendingChannel = channel,
+                pendingDualSide = side
+            )
+            return
+        }
+        setDualChannelUnlocked(side, channel)
+    }
+
+    private fun setDualChannelUnlocked(side: DualSide, channel: Channel) {
         _ui.update { if (side == DualSide.LEFT) it.copy(dualLeft = channel) else it.copy(dualRight = channel) }
         viewModelScope.launch { repo.recordRecent(channel.id) }
     }
@@ -173,6 +258,94 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (remaining != null) play(remaining) else go(Screen.HOME)
     }
 
+    fun setUiTextScale(scale: Float) = updatePreferences { it.copy(uiTextScale = scale.coerceIn(0.85f, 1.35f)) }
+    fun setPreferredAudioLanguage(language: String) = updatePreferences { it.copy(preferredAudioLanguage = language) }
+    fun setPreferredSubtitleLanguage(language: String) = updatePreferences { it.copy(preferredSubtitleLanguage = language) }
+    fun setSubtitleTextSize(sizeSp: Float) = updatePreferences { it.copy(subtitleTextSizeSp = sizeSp.coerceIn(16f, 30f)) }
+
+    fun setParentalPin(pin: String): Boolean {
+        if (!ParentalPolicy.validPinFormat(pin)) {
+            _ui.update { it.copy(error = "El PIN parental debe tener de 4 a 6 dígitos.") }
+            return false
+        }
+        updatePreferences { it.copy(parentalEnabled = true, parentalPinHash = AppPreferenceStore.hashPin(pin)) }
+        _parentalUnlocked.value = true
+        _ui.update { it.copy(error = null) }
+        return true
+    }
+
+    fun setParentalEnabled(enabled: Boolean) {
+        val current = _preferences.value
+        if (enabled && current.parentalPinHash.isBlank()) {
+            _ui.update { it.copy(error = "Primero configura un PIN parental.") }
+            return
+        }
+        if (!enabled && current.parentalEnabled && !_parentalUnlocked.value) {
+            _parentalGate.value = ParentalGate(
+                title = "Desbloquear control parental",
+                message = "Ingresa el PIN antes de desactivar la protección."
+            )
+            return
+        }
+        updatePreferences { it.copy(parentalEnabled = enabled) }
+    }
+
+    fun toggleChannelLock(channelId: String) {
+        val current = _preferences.value
+        if (current.parentalEnabled && !_parentalUnlocked.value) {
+            _parentalGate.value = ParentalGate(
+                title = "Desbloquear control parental",
+                message = "Ingresa el PIN antes de cambiar canales protegidos."
+            )
+            return
+        }
+        updatePreferences {
+            val next = it.lockedChannelIds.toMutableSet()
+            if (!next.add(channelId)) next.remove(channelId)
+            it.copy(lockedChannelIds = next)
+        }
+    }
+
+    fun requestParentalUnlock() {
+        val current = _preferences.value
+        if (!current.parentalEnabled || current.parentalPinHash.isBlank()) {
+            _parentalUnlocked.value = true
+            return
+        }
+        _parentalGate.value = ParentalGate(
+            title = "Desbloquear control parental",
+            message = "Ingresa el PIN para administrar la protección."
+        )
+    }
+
+    fun submitParentalPin(pin: String): Boolean {
+        val current = _preferences.value
+        if (current.parentalPinHash.isBlank() || AppPreferenceStore.hashPin(pin) != current.parentalPinHash) {
+            _ui.update { it.copy(error = "PIN parental incorrecto.") }
+            return false
+        }
+        _parentalUnlocked.value = true
+        val gate = _parentalGate.value
+        _parentalGate.value = null
+        _ui.update { it.copy(error = null) }
+
+        when {
+            gate?.pendingCategory != null -> openCategoryUnlocked(gate.pendingCategory)
+            gate?.pendingChannel != null && gate.pendingStartDual -> startDualUnlocked(gate.pendingChannel)
+            gate?.pendingChannel != null && gate.pendingDualSide != null -> setDualChannelUnlocked(gate.pendingDualSide, gate.pendingChannel)
+            gate?.pendingChannel != null -> playUnlocked(gate.pendingChannel)
+        }
+        return true
+    }
+
+    fun dismissParentalGate() { _parentalGate.value = null }
+
+    private fun updatePreferences(transform: (UserPreferences) -> UserPreferences) {
+        val next = transform(_preferences.value)
+        _preferences.value = next
+        runCatching { preferenceStore.save(next) }
+    }
+
     fun addPlaylistSecure(name: String, url: String, username: String, password: String, authMode: PlaylistAuthMode) = viewModelScope.launch {
         runCatching { repo.addPlaylist(name, url, username, password, authMode) }
             .onSuccess { list -> _ui.update { it.copy(playlists = list, error = null) } }
@@ -185,7 +358,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             .onFailure { e -> _ui.update { it.copy(error = e.message) } }
     }
 
-    // Backward-compatible entry points used by older composables; secure V5 UI uses the methods above.
     fun addPlaylist(name: String, url: String) = addPlaylistSecure(name, url, "", "", PlaylistAuthMode.NONE)
     fun editPlaylist(id: String, name: String, url: String) {
         val current = _ui.value.playlists.firstOrNull { it.id == id } ?: return

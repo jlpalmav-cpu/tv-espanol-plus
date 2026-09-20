@@ -1,8 +1,8 @@
 package com.epalma.tvespanolplus
 
+import android.util.TypedValue
 import android.view.ViewGroup
 import androidx.annotation.OptIn
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +34,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 private data class MediaTrackChoice(
@@ -52,10 +55,21 @@ fun ResilientPlayer(
     controls: Boolean = true,
     showTrackMenu: Boolean = false,
     onTrackMenuDismiss: () -> Unit = {},
-    onTerminalError: (String) -> Unit = {}
+    onTerminalError: (String) -> Unit = {},
+    preferredAudioLanguage: String? = null,
+    preferredSubtitleLanguage: String? = null,
+    subtitleTextSizeSp: Float? = null,
+    retryToken: Int = 0
 ) {
     val context = LocalContext.current
+    val storedPrefs = remember(context) { runCatching { AppPreferenceStore(context).load() }.getOrDefault(UserPreferences()) }
+    val audioPreference = preferredAudioLanguage ?: storedPrefs.preferredAudioLanguage
+    val subtitlePreference = preferredSubtitleLanguage ?: storedPrefs.preferredSubtitleLanguage
+    val subtitleSize = (subtitleTextSizeSp ?: storedPrefs.subtitleTextSizeSp).coerceIn(16f, 30f)
+    val scope = rememberCoroutineScope()
     var sourceIndex by remember(channel.id) { mutableIntStateOf(0) }
+    var reloadToken by remember(channel.id) { mutableIntStateOf(0) }
+    var retryAttempt by remember(channel.id, sourceIndex) { mutableIntStateOf(0) }
     var terminalReported by remember(channel.id) { mutableStateOf(false) }
     var trackChoices by remember(channel.id) { mutableStateOf<List<MediaTrackChoice>>(emptyList()) }
 
@@ -63,17 +77,10 @@ fun ResilientPlayer(
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(8_000, 30_000, 1_000, 2_500)
             .build()
-        ExoPlayer.Builder(context)
-            .setLoadControl(loadControl)
-            .build().apply {
-                trackSelectionParameters = TrackSelectionParameters.Builder(context)
-                    .setPreferredAudioLanguages("es-419", "es", "spa")
-                    .setPreferredTextLanguages("es-419", "es", "spa")
-                    .build()
-            }
+        ExoPlayer.Builder(context).setLoadControl(loadControl).build()
     }
 
-    LaunchedEffect(channel.id, sourceIndex) {
+    LaunchedEffect(channel.id, sourceIndex, reloadToken, retryToken) {
         terminalReported = false
         trackChoices = emptyList()
         val source = channel.sources.getOrNull(sourceIndex)
@@ -88,14 +95,48 @@ fun ResilientPlayer(
 
     LaunchedEffect(volume) { player.volume = volume }
 
+    LaunchedEffect(audioPreference, subtitlePreference) {
+        val builder = player.trackSelectionParameters.buildUpon()
+            .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+            .clearOverridesOfType(C.TRACK_TYPE_TEXT)
+            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+
+        val audio = languagePriority(audioPreference)
+        if (audio.isNotEmpty()) builder.setPreferredAudioLanguages(*audio)
+
+        if (subtitlePreference == "off") {
+            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+        } else {
+            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+            val subtitles = languagePriority(subtitlePreference)
+            if (subtitles.isNotEmpty()) builder.setPreferredTextLanguages(*subtitles)
+        }
+        player.trackSelectionParameters = builder.build()
+    }
+
     DisposableEffect(player, channel.id) {
         val listener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                val next = PlaybackPolicy.nextSourceIndex(sourceIndex, channel.sources.size)
-                if (next != null) sourceIndex = next else if (!terminalReported) {
-                    terminalReported = true
-                    onTerminalError("Canal temporalmente no disponible")
+                if (retryAttempt < 2) {
+                    retryAttempt += 1
+                    scope.launch {
+                        delay(700L * retryAttempt)
+                        reloadToken += 1
+                    }
+                    return
                 }
+                val next = PlaybackPolicy.nextSourceIndex(sourceIndex, channel.sources.size)
+                if (next != null) {
+                    retryAttempt = 0
+                    sourceIndex = next
+                } else if (!terminalReported) {
+                    terminalReported = true
+                    onTerminalError("Canal temporalmente no disponible. Se intentaron todas las fuentes.")
+                }
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) retryAttempt = 0
             }
 
             override fun onTracksChanged(tracks: Tracks) {
@@ -118,11 +159,13 @@ fun ResilientPlayer(
                 useController = controls
                 setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                 keepScreenOn = true
+                subtitleView?.setFixedTextSize(TypedValue.COMPLEX_UNIT_SP, subtitleSize)
             }
         },
         update = { view ->
             view.player = player
             view.useController = controls
+            view.subtitleView?.setFixedTextSize(TypedValue.COMPLEX_UNIT_SP, subtitleSize)
         },
         modifier = modifier
     )
@@ -131,14 +174,17 @@ fun ResilientPlayer(
         TrackMenuDialog(
             choices = trackChoices,
             dismiss = onTrackMenuDismiss,
-            autoSpanish = { type ->
+            autoLanguage = { type, language ->
                 val builder = player.trackSelectionParameters.buildUpon()
                     .clearOverridesOfType(type)
                     .setTrackTypeDisabled(type, false)
-                if (type == C.TRACK_TYPE_AUDIO) builder.setPreferredAudioLanguages("es-419", "es", "spa")
-                if (type == C.TRACK_TYPE_TEXT) builder.setPreferredTextLanguages("es-419", "es", "spa")
+                val ordered = languagePriority(language)
+                if (type == C.TRACK_TYPE_AUDIO && ordered.isNotEmpty()) builder.setPreferredAudioLanguages(*ordered)
+                if (type == C.TRACK_TYPE_TEXT && ordered.isNotEmpty()) builder.setPreferredTextLanguages(*ordered)
                 player.trackSelectionParameters = builder.build()
             },
+            defaultAudioLanguage = audioPreference,
+            defaultSubtitleLanguage = subtitlePreference,
             disableSubtitles = {
                 player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
                     .clearOverridesOfType(C.TRACK_TYPE_TEXT)
@@ -159,7 +205,9 @@ fun ResilientPlayer(
 private fun TrackMenuDialog(
     choices: List<MediaTrackChoice>,
     dismiss: () -> Unit,
-    autoSpanish: (Int) -> Unit,
+    autoLanguage: (Int, String) -> Unit,
+    defaultAudioLanguage: String,
+    defaultSubtitleLanguage: String,
     disableSubtitles: () -> Unit,
     select: (MediaTrackChoice) -> Unit
 ) {
@@ -171,14 +219,16 @@ private fun TrackMenuDialog(
         text = {
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 430.dp)) {
                 item { Text("Audio") }
-                item { TextButton(onClick = { autoSpanish(C.TRACK_TYPE_AUDIO); dismiss() }) { Text("Automático · preferir español") } }
+                item { TextButton(onClick = { autoLanguage(C.TRACK_TYPE_AUDIO, defaultAudioLanguage); dismiss() }) { Text("Automático · ${languageLabel(defaultAudioLanguage)}") } }
                 audio.forEach { choice ->
                     item(key = "a:${choice.group.hashCode()}:${choice.index}") {
                         TextButton(onClick = { select(choice); dismiss() }) { Text((if (choice.selected) "✓ " else "") + choice.label) }
                     }
                 }
                 item { Text("Subtítulos") }
-                item { TextButton(onClick = { autoSpanish(C.TRACK_TYPE_TEXT); dismiss() }) { Text("Automático · preferir español") } }
+                if (defaultSubtitleLanguage != "off") {
+                    item { TextButton(onClick = { autoLanguage(C.TRACK_TYPE_TEXT, defaultSubtitleLanguage); dismiss() }) { Text("Automático · ${languageLabel(defaultSubtitleLanguage)}") } }
+                }
                 item { TextButton(onClick = { disableSubtitles(); dismiss() }) { Text("Desactivar subtítulos") } }
                 text.forEach { choice ->
                     item(key = "t:${choice.group.hashCode()}:${choice.index}") {
@@ -190,6 +240,25 @@ private fun TrackMenuDialog(
         },
         confirmButton = { TextButton(onClick = dismiss) { Text("Cerrar") } }
     )
+}
+
+private fun languagePriority(language: String): Array<String> = when (language) {
+    "es-419" -> arrayOf("es-419", "es", "spa")
+    "es" -> arrayOf("es", "spa", "es-419")
+    "en" -> arrayOf("en", "eng")
+    "pt" -> arrayOf("pt", "por")
+    "fr" -> arrayOf("fr", "fra", "fre")
+    else -> if (language.isBlank() || language == "auto" || language == "off") emptyArray() else arrayOf(language)
+}
+
+private fun languageLabel(language: String): String = when (language) {
+    "es-419" -> "Español Latino"
+    "es" -> "Español"
+    "en" -> "Inglés"
+    "pt" -> "Portugués"
+    "fr" -> "Francés"
+    "off" -> "Desactivados"
+    else -> "Automático"
 }
 
 private fun extractChoices(tracks: Tracks): List<MediaTrackChoice> = buildList {

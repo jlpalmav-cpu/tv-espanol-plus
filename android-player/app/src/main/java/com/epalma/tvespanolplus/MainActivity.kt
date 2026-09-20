@@ -19,6 +19,10 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = screen != Screen.HOME) {
                 when (screen) {
                     Screen.CHANNELS -> when {
+                        filter.startsWith("CountryCat:") -> {
+                            val country = filter.removePrefix("CountryCat:").substringBefore('|')
+                            vm.openCategory("País:$country")
+                        }
                         filter.startsWith("País:") -> vm.openCategory("Países")
                         filter.startsWith("Subcat:") -> vm.openCategory(filter.removePrefix("Subcat:").substringBefore('|'))
                         else -> vm.go(Screen.HOME)
@@ -27,8 +31,7 @@ class MainActivity : ComponentActivity() {
                     Screen.HOME -> Unit
                 }
             }
-            if (screen == Screen.ABOUT) TVEspanolAboutV14()
-            else TVEspanolPlusRootV5(vm = vm, onExit = { finishAffinity() })
+            TVEspanolPlusRootV6(vm = vm, onExit = { finishAffinity() })
         }
     }
 }
