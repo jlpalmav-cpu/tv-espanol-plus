@@ -55,11 +55,11 @@ fun ResilientPlayer(
     controls: Boolean = true,
     showTrackMenu: Boolean = false,
     onTrackMenuDismiss: () -> Unit = {},
-    onTerminalError: (String) -> Unit = {},
     preferredAudioLanguage: String? = null,
     preferredSubtitleLanguage: String? = null,
     subtitleTextSizeSp: Float? = null,
-    retryToken: Int = 0
+    retryToken: Int = 0,
+    onTerminalError: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val storedPrefs = remember(context) { runCatching { AppPreferenceStore(context).load() }.getOrDefault(UserPreferences()) }
