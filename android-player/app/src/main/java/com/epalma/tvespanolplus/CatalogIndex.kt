@@ -2,7 +2,6 @@ package com.epalma.tvespanolplus
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Locale
 import kotlin.math.max
 
 data class CatalogEntry(
@@ -27,8 +26,16 @@ class CatalogIndex private constructor(
 
     fun category(title: String): List<Channel> = byCategory[title].orEmpty().map { it.channel }
 
-    fun subcategory(category: String, subcategory: String): List<Channel> =
-        byCategorySubcategory[category to subcategory].orEmpty().map { it.channel }
+    fun subcategory(category: String, subcategory: String): List<Channel> {
+        if (isCountryCentric(category) && subcategory == ChannelClassifier.OTHER_COUNTRIES) {
+            val source = byCategory[category].orEmpty()
+            val small = source.groupBy { it.country }
+                .filterValues { it.size < MIN_COUNTRY_FOLDER_SIZE }
+                .keys
+            return source.filter { it.country in small }.map { it.channel }
+        }
+        return byCategorySubcategory[category to subcategory].orEmpty().map { it.channel }
+    }
 
     fun country(name: String): List<Channel> = byCountry[name].orEmpty().map { it.channel }
 
@@ -37,6 +44,25 @@ class CatalogIndex private constructor(
         if (source.isEmpty()) return emptyList()
         val grouped = source.groupBy { it.subcategory }
         if (grouped.size <= 1) return emptyList()
+
+        if (isCountryCentric(category)) {
+            val regular = grouped.filterValues { it.size >= MIN_COUNTRY_FOLDER_SIZE }
+            val otherCount = grouped.filterValues { it.size < MIN_COUNTRY_FOLDER_SIZE }.values.sumOf { it.size }
+            return buildList {
+                regular.entries
+                    .map { CatalogFolder(it.key, it.value.size) }
+                    .sortedWith(compareBy<CatalogFolder> {
+                        when (TextNormalizer.normalize(it.name)) {
+                            "honduras" -> 0
+                            "sin pais" -> 2
+                            else -> 1
+                        }
+                    }.thenBy { TextNormalizer.normalize(it.name) })
+                    .forEach(::add)
+                if (otherCount > 0) add(CatalogFolder(ChannelClassifier.OTHER_COUNTRIES, otherCount))
+            }
+        }
+
         return grouped.entries
             .map { CatalogFolder(it.key, it.value.size) }
             .sortedWith(compareBy<CatalogFolder> { SmartTaxonomy.order(category, it.name) }
@@ -99,7 +125,10 @@ class CatalogIndex private constructor(
         return 0
     }
 
+    private fun isCountryCentric(category: String): Boolean = category == "Noticias" || category == "TV general"
+
     companion object {
+        private const val MIN_COUNTRY_FOLDER_SIZE = 3
         val EMPTY = CatalogIndex(emptyList(), emptyMap(), emptyMap(), emptyMap(), emptyMap())
 
         fun build(channels: List<Channel>): CatalogIndex {
