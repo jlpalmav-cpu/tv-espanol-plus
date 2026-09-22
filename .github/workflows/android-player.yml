@@ -2,7 +2,7 @@ name: TV Espanol Plus - Test and Build APK
 
 on:
   push:
-    branches: ["tv-player-v1"]
+    branches: ["tv-player-v1", "tv-player-v1-v1-6-work"]
     paths:
       - "android-player/**"
       - ".github/workflows/android-player.yml"
@@ -32,7 +32,7 @@ jobs:
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0 platforms;android-28"
 
-      - name: Unit, security, parental, search and deduplication tests
+      - name: Unit navigation security search taxonomy and deduplication tests
         working-directory: android-player
         run: gradle --no-daemon testDebugUnitTest
 
@@ -44,12 +44,13 @@ jobs:
         working-directory: android-player
         run: gradle --no-daemon assembleDebug
 
-      - name: APK structure and launcher integrity
+      - name: APK structure launcher and version integrity
         working-directory: android-player
         run: |
           unzip -t app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | tee /tmp/badging.txt
           grep -q "package: name='com.epalma.tvespanolplus'" /tmp/badging.txt
+          grep -q "versionName='1.6.0'" /tmp/badging.txt
           grep -q "launchable-activity: name='com.epalma.tvespanolplus.MainActivity'" /tmp/badging.txt
           grep -q "sdkVersion:'26'" /tmp/badging.txt
 
@@ -71,42 +72,41 @@ jobs:
           working-directory: android-player
           script: bash scripts/emulator-smoke.sh
 
-      - name: Prepare validated v1.5.0 APK
+      - name: Prepare validated v1.6.0 APK
         working-directory: android-player
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.5.0.apk
-          sha256sum dist/TV_Espanol_Plus_Player-v1.5.0.apk > dist/SHA256.txt
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TV_Espanol_Plus_Player-v1.6.0.apk
+          sha256sum dist/TV_Espanol_Plus_Player-v1.6.0.apk > dist/SHA256.txt
           cat > dist/TEST_STATUS.txt <<'TXT'
-          TV Español+ Player v1.5.0
+          TV Español+ Player v1.6.0
           PASSED BEFORE PUBLICATION:
-          - unit/security/search/deduplication/parental-control tests
+          - unit tests: indexed search, smart sports/movie taxonomy, canonical channel uniqueness and duplicate playlist cleanup
+          - parental/security/search regression tests
           - Android lint
-          - APK build + ZIP/APK integrity + manifest/launcher verification
+          - APK build + ZIP/APK integrity + launcher/version verification
           - API 35 install, cold-start, portrait/landscape survival, relaunch and crash/ANR checks
           - API 28 (Android 9) install, cold-start, portrait/landscape survival, relaunch and crash/ANR checks
 
-          v1.5 highlights:
-          - startup hardening: background scheduler failure can no longer block application launch
-          - responsive Android TV / Google TV / mobile shell
-          - large icon+label navigation buttons and clearer focus state
-          - menu > submenu > unique channel-list hierarchy with TV preview pane
-          - canonical unique channel IDs; virtual Favorites/Recents/Search views do not duplicate the catalog
-          - dual view retained
-          - parental PIN protection for Adultos 18+ plus optional per-channel locks
-          - persistent preferred audio language, subtitle language, subtitle size and UI text size
-          - Spanish-first defaults with manual Media3 track selection
-          - improved player recovery: transient retries, alternate source fallback and manual retry
-          - search computation moved off the main UI thread for smoother typing
-          - separate dark sports-inspired background and refreshed Honduras-branded logo
+          v1.6 highlights:
+          - prebuilt in-memory catalog index for faster button/category/search response
+          - content-aware submenu hierarchy: sports by sport, movies/series by genre, news/general TV by country
+          - Universal Search with direct category shortcuts and immediate indexed channel results
+          - redesigned Dual View with one universal channel selector, Recents/Favorites/categories/countries and one active audio
+          - preview delayed to 1.2 seconds to reduce decoder/network work while browsing
+          - large icon+label home buttons including visible Exit
+          - canonical unique IDs retained across search/favorites/recents/submenus
+          - automatic removal of a repeated Usuario playlist when it is the same Xtream provider
+          - separate dark, discreet sports background inspired abstractly by the Olimpia–Motagua atmosphere in Honduras
+          - persistent audio/subtitle/text-size preferences, parental PIN and resilient playback fallback retained
 
-          NOTE: audio/subtitle tracks only exist when the stream provider publishes them. Physical-device validation is still recommended for decoder-specific dual-view limits on individual TV models.
+          NOTE: stream availability and alternate audio/subtitle tracks depend on each provider. Dual simultaneous decoding can still be limited by the physical TV/box chipset; the app must fail gracefully rather than crash.
           TXT
 
       - name: Upload validated APK
         uses: actions/upload-artifact@v4
         with:
-          name: TV-Espanol-Plus-Player-v1.5.0
+          name: TV-Espanol-Plus-Player-v1.6.0
           path: android-player/dist/*
           if-no-files-found: error
           retention-days: 30
