@@ -43,8 +43,13 @@ class LocalStore(private val context: Context) {
         }
         if (normalized.isEmpty()) normalized += PlaylistConfig(DEFAULT_ID, DEFAULT_NAME, DEFAULT_URL, active = true)
         if (normalized.none { it.active }) normalized[0] = normalized[0].copy(active = true)
-        if (existing != normalized) savePlaylists(normalized)
-        return normalized
+
+        // Migration/cleanup: older builds could expose a second item named "Usuario"
+        // pointing at the exact same Xtream provider. Keep the canonical Xtream item only.
+        var cleaned = PlaylistCleaner.clean(normalized)
+        if (cleaned.none { it.active } && cleaned.isNotEmpty()) cleaned = cleaned.mapIndexed { index, item -> item.copy(active = index == 0) }
+        if (existing != cleaned) savePlaylists(cleaned)
+        return cleaned
     }
 
     suspend fun getPlaylists(): List<PlaylistConfig> {
@@ -52,7 +57,6 @@ class LocalStore(private val context: Context) {
             return decodePlaylists(encryptedJson)
         }
 
-        // One-time migration from the previous plaintext DataStore format.
         val legacy = context.dataStore.data.first()[LEGACY_PLAYLISTS]
         if (!legacy.isNullOrBlank()) {
             val migrated = decodePlaylists(legacy)
@@ -78,7 +82,6 @@ class LocalStore(private val context: Context) {
             })
         }
         secure.putString(SECURE_PLAYLISTS, arr.toString())
-        // Ensure old plaintext copy is gone after every save.
         context.dataStore.edit { it.remove(LEGACY_PLAYLISTS) }
     }
 
@@ -129,7 +132,6 @@ class LocalStore(private val context: Context) {
         if (!file.exists()) return null
         val raw = runCatching { file.readBytes() }.getOrNull() ?: return null
         return runCatching { secure.decryptBytes(raw) }.getOrElse {
-            // Upgrade a legacy plaintext cache in place, then return it.
             runCatching { writeEncrypted(file, raw) }
             raw
         }
@@ -138,7 +140,6 @@ class LocalStore(private val context: Context) {
     fun deleteSensitiveCaches(id: String) {
         playlistCache(id).delete()
         epgCache(id).delete()
-        // Legacy filenames from older builds.
         context.cacheDir.resolve("playlist_${safe(id)}.m3u").delete()
         context.cacheDir.resolve("epg_${safe(id)}.xml.gz").delete()
     }
