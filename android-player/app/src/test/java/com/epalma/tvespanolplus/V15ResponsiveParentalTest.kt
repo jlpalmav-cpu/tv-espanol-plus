@@ -70,13 +70,15 @@ class V15ResponsiveParentalTest {
 
     @Test fun submenuCountsEqualUniqueCanonicalCategoryCount() {
         val channels = buildList {
-            repeat(ChannelClassifier.SUBCATEGORY_THRESHOLD + 6) { index ->
-                add(channel("s$index", "Sport $index", "Deportes", if (index % 2 == 0) "HN" else "ES"))
-            }
+            repeat(8) { index -> add(channel("f$index", "Fútbol $index", "Deportes Fútbol", if (index % 2 == 0) "HN" else "ES")) }
+            repeat(5) { index -> add(channel("b$index", "NBA $index", "Deportes Basketball", "US")) }
+            repeat(5) { index -> add(channel("t$index", "ATP Tennis $index", "Deportes Tennis", "ES")) }
         }
         val groups = ChannelClassifier.subcategoriesForCategory(channels, "Deportes")
         assertTrue(groups.isNotEmpty())
         assertEquals(ChannelClassifier.categoryCount(channels, "Deportes"), groups.sumOf { it.count })
+        val allIds = groups.flatMap { group -> ChannelClassifier.channelsForSubcategory(channels, "Deportes", group.name).map { it.id } }
+        assertEquals(allIds.size, allIds.distinct().size)
     }
 
     @Test fun searchAlwaysReturnsOneBestHitPerChannel() {
