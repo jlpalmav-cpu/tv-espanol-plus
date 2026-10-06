@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
     LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(10),dp(8),dp(10),dp(8));
 
     topHeader=new LinearLayout(this);topHeader.setOrientation(LinearLayout.HORIZONTAL);topHeader.setGravity(Gravity.CENTER_VERTICAL);topHeader.setPadding(dp(8),0,dp(8),0);
-    TextView brand=label("TV Español+",26);brand.setTypeface(null,1);topHeader.addView(brand,new LinearLayout.LayoutParams(0,dp(52),1));
+    TextView brand=label("TV Español+",26);brand.setTypeface(null,android.graphics.Typeface.BOLD);topHeader.addView(brand,new LinearLayout.LayoutParams(0,dp(52),1));
     sourceLabel=label("Lista oficial",12);sourceLabel.setTextColor(Color.LTGRAY);sourceLabel.setGravity(Gravity.CENTER);topHeader.addView(sourceLabel,new LinearLayout.LayoutParams(dp(190),dp(42)));
     Button settings=button("⚙ Configuración");topHeader.addView(settings,new LinearLayout.LayoutParams(dp(150),dp(44)));root.addView(topHeader,new LinearLayout.LayoutParams(-1,dp(54)));
 
@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
     list=new ListView(this);list.setDividerHeight(dp(1));list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(30,55,78)));list.setChoiceMode(ListView.CHOICE_MODE_SINGLE);leftPanel.addView(list,new LinearLayout.LayoutParams(-1,0,1));
 
     LinearLayout right=new LinearLayout(this);right.setOrientation(LinearLayout.VERTICAL);right.setPadding(dp(10),0,0,0);body.addView(right,new LinearLayout.LayoutParams(0,-1,0.67f));
-    title=label("Seleccione un canal",20);title.setTypeface(null,1);title.setPadding(dp(8),0,dp(8),0);right.addView(title,new LinearLayout.LayoutParams(-1,dp(48)));
+    title=label("Seleccione un canal",20);title.setTypeface(null,android.graphics.Typeface.BOLD);title.setPadding(dp(8),0,dp(8),0);right.addView(title,new LinearLayout.LayoutParams(-1,dp(48)));
     playerView=new PlayerView(this);playerView.setFocusable(true);playerView.setBackgroundColor(Color.BLACK);right.addView(playerView,new LinearLayout.LayoutParams(-1,0,1));
     status=label("Listo",13);status.setTextColor(Color.LTGRAY);status.setPadding(dp(8),0,dp(8),0);right.addView(status,new LinearLayout.LayoutParams(-1,dp(32)));
 
