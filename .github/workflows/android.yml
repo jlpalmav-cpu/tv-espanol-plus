@@ -33,7 +33,7 @@ jobs:
           set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '1.9.3'" app/build.gradle
+          grep -q "versionName '1.9.4'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           grep -q 'x-tvg-url' TV_Espanol_Plus_VERIFICADA.m3u
           grep -q 'showGuide()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -41,6 +41,7 @@ jobs:
           grep -q 'healthIcon' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showGuideSettings' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'CastButtonFactory' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'GoogleApiAvailability' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'verifyChannels' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Vista doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -62,55 +63,55 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='193' versionName='1.9.3'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='194' versionName='1.9.4'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v1.9.3.apk
-          sha256sum PalmaVision-v1.9.3.apk > PalmaVision-v1.9.3.sha256.txt
+          cp "$APK" PalmaVision-v1.9.4.apk
+          sha256sum PalmaVision-v1.9.4.apk > PalmaVision-v1.9.4.sha256.txt
 
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v1.9.3_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v1.9.4_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.9.3-release
+          name: PalmaVision-v1.9.4-release
           path: |
-            PalmaVision-v1.9.3.apk
-            PalmaVision-v1.9.3.sha256.txt
+            PalmaVision-v1.9.4.apk
+            PalmaVision-v1.9.4.sha256.txt
           if-no-files-found: error
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.9.3-project
-          path: PalmaVision_v1.9.3_Project.zip
+          name: PalmaVision-v1.9.4-project
+          path: PalmaVision_v1.9.4_Project.zip
           if-no-files-found: error
 
   emulator-smoke:
     needs: build-test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: PalmaVision-v1.9.3-release
+          name: PalmaVision-v1.9.4-release
 
       - name: Verify downloaded APK
-        run: test -s PalmaVision-v1.9.3.apk
+        run: test -s PalmaVision-v1.9.4.apk
 
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_2
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            adb install -r PalmaVision-v1.9.3.apk
+            adb install -r PalmaVision-v1.9.4.apk
             adb logcat -c
             adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
             grep -q 'Status: ok' launch.txt
