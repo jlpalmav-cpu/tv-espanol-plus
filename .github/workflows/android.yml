@@ -4,9 +4,9 @@ on:
     branches: [ build-tvplus ]
   workflow_dispatch:
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -15,28 +15,59 @@ jobs:
         with: { gradle-version: '8.10.2' }
       - name: Prepare verified channel list
         run: mkdir -p app/src/main/assets && cp TV_Espanol_Plus_VERIFICADA.m3u app/src/main/assets/
-      - name: Validate source and build release
+      - name: Source, privacy and security checks
         run: |
+          set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          gradle :app:lintRelease :app:assembleRelease
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/release/app-release.apk | head -24
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions app/build/outputs/apk/release/app-release.apk
-          cp app/build/outputs/apk/release/app-release.apk PalmaVision-v1.7.1.apk
-          sha256sum PalmaVision-v1.7.1.apk > PalmaVision-v1.7.1.sha256.txt
+          grep -q "versionName '1.8.0'" app/build.gradle
+          grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
+          ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Vista doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Más categorías' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+      - name: Lint, unit task and release build
+        run: gradle :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
+      - name: Verify APK integrity and manifest
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='180' versionName='1.8.0'" badging.txt
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
+          test "$(grep -c '^uses-permission:' permissions.txt)" -eq 2
+          cp "$APK" PalmaVision-v1.8.0.apk
+          sha256sum PalmaVision-v1.8.0.apk > PalmaVision-v1.8.0.sha256.txt
+      - name: Android emulator install and launch smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r PalmaVision-v1.8.0.apk
+            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
+            grep -q 'Status: ok' launch.txt
+            sleep 4
+            adb shell dumpsys activity activities | grep -q 'com.epalma.tvespanolplus/.MainActivity'
+            adb logcat -d -t 400 | grep -E 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus' && exit 1 || true
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v1.7.1_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u -x "app/build/*"
+          zip -r PalmaVision_v1.8.0_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.7.1-release
+          name: PalmaVision-v1.8.0-release
           path: |
-            PalmaVision-v1.7.1.apk
-            PalmaVision-v1.7.1.sha256.txt
+            PalmaVision-v1.8.0.apk
+            PalmaVision-v1.8.0.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.7.1-project
-          path: PalmaVision_v1.7.1_Project.zip
+          name: PalmaVision-v1.8.0-project
+          path: PalmaVision_v1.8.0_Project.zip
           if-no-files-found: error
