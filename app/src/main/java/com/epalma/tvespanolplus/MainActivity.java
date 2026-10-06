@@ -273,7 +273,7 @@ public class MainActivity extends FragmentActivity {
   List<EpgProgram> nextPrograms(Channel c,int limit){ArrayList<EpgProgram> out=new ArrayList<>();List<EpgProgram> l=epgByChannel.get(c.id);if(l==null)return out;long now=System.currentTimeMillis();for(EpgProgram p:l)if(p.start>now){out.add(p);if(out.size()>=limit)break;}return out;}
   String formatTime(long ms){return new SimpleDateFormat("h:mm a",Locale.getDefault()).format(new Date(ms));}
   String timeRange(EpgProgram p){return formatTime(p.start)+"–"+formatTime(p.stop);}
-  void refreshNowPlaying(){if(current==null||status==null)return;EpgProgram p=currentProgram(current);status.setText(healthIcon(current)+" En vivo"+(p==null?"":" · Ahora: "+p.title+" · "+timeRange(p)));status.setTextColor(health.getOrDefault(current.id,0)==-1?Color.rgb(255,110,110):CYAN);}
+  void refreshNowPlaying(){if(current==null||status==null)return;EpgProgram p=currentProgram(current);status.setText(healthIcon(current)+" En vivo"+(p==null?"":" · Ahora: "+p.title+" · "+timeRange(p)));Integer hs=health.get(current.id);status.setTextColor(hs!=null&&hs==-1?Color.rgb(255,110,110):CYAN);}
 
   String healthIcon(Channel c){Integer h=health.get(c.id);if(h!=null){if(h==1)return "🟢";if(h==-1)return "🔴";if(h==2)return "🔵";}return c.checkedAt.isEmpty()?"⚪":"🟡";}
   String healthText(Channel c){Integer h=health.get(c.id);if(h!=null){if(h==1)return "🟢 Activo";if(h==-1)return "🔴 No responde";if(h==2)return "🔵 Verificando";}return c.checkedAt.isEmpty()?"⚪ Sin verificar":"🟡 Verificado en la lista: "+c.checkedAt;}
