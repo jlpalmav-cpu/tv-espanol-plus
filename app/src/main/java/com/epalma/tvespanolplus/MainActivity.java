@@ -14,6 +14,7 @@ import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.media3.common.*;
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.AspectRatioFrameLayout;
@@ -25,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.*;
 
+@UnstableApi
 public class MainActivity extends Activity {
   static final int OPEN_M3U=7001;
   static final int NAVY=Color.rgb(4,12,23), PANEL=Color.rgb(9,28,46), CARD=Color.rgb(17,43,66), ACCENT=Color.rgb(25,155,255), CYAN=Color.rgb(32,221,232), BLUE=Color.rgb(27,105,255), MUTED=Color.rgb(166,188,207), GREEN=Color.rgb(32,189,129), PURPLE=Color.rgb(124,92,255), ORANGE=Color.rgb(255,151,54);
