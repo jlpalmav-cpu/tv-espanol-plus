@@ -12,6 +12,7 @@ import android.util.Rational;
 import android.view.*;
 import android.widget.*;
 import androidx.media3.common.*;
+import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.TrackSelectionDialogBuilder;
@@ -118,6 +119,7 @@ public class MainActivity extends Activity {
   void updateFav(){favButton.setText(current!=null&&favorites.contains(current.id)?"★ Favorito":"☆ Favorito");}
   void addRecent(String id){recents.remove(id);recents.addFirst(id);while(recents.size()>30)recents.removeLast();savePrefs();}
 
+  @UnstableApi
   void showTrackSelector(int type,String caption){
     if(player==null){toast("Reproductor no disponible");return;}
     try{new TrackSelectionDialogBuilder(this,caption,player,type).setShowDisableOption(true).build().show();}
