@@ -123,13 +123,16 @@ public class MainActivity extends Activity {
     catch(Exception e){toast(type==C.TRACK_TYPE_TEXT?"Este canal no ofrece subtítulos seleccionables":"Este canal no ofrece pistas de audio adicionales");}
   }
 
-  @SuppressLint(\"NewApi\")\n  void enterPip(){
+  @SuppressLint("NewApi")
+  void enterPip(){
     if(Build.VERSION.SDK_INT<26){toast("Picture-in-Picture requiere Android 8 o superior");return;}
     if(current==null){toast("Abra un canal antes de usar PiP");return;}
     PictureInPictureParams p=new PictureInPictureParams.Builder().setAspectRatio(new Rational(16,9)).build();enterPictureInPictureMode(p);
   }
-  @SuppressLint(\"NewApi\")\n  @Override public void onPictureInPictureModeChanged(boolean pip, Configuration cfg){super.onPictureInPictureModeChanged(pip,cfg);leftPanel.setVisibility(pip?View.GONE:View.VISIBLE);topHeader.setVisibility(pip?View.GONE:View.VISIBLE);bottomBar.setVisibility(pip?View.GONE:View.VISIBLE);status.setVisibility(pip?View.GONE:View.VISIBLE);title.setVisibility(pip?View.GONE:View.VISIBLE);}
-  @SuppressLint(\"NewApi\")\n  @Override protected void onUserLeaveHint(){super.onUserLeaveHint();boolean auto=getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean("auto_pip",false);if(auto&&Build.VERSION.SDK_INT>=26&&current!=null&&player!=null&&player.isPlaying())enterPip();}
+  @SuppressLint("NewApi")
+  @Override public void onPictureInPictureModeChanged(boolean pip, Configuration cfg){super.onPictureInPictureModeChanged(pip,cfg);leftPanel.setVisibility(pip?View.GONE:View.VISIBLE);topHeader.setVisibility(pip?View.GONE:View.VISIBLE);bottomBar.setVisibility(pip?View.GONE:View.VISIBLE);status.setVisibility(pip?View.GONE:View.VISIBLE);title.setVisibility(pip?View.GONE:View.VISIBLE);}
+  @SuppressLint("NewApi")
+  @Override protected void onUserLeaveHint(){super.onUserLeaveHint();boolean auto=getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean("auto_pip",false);if(auto&&Build.VERSION.SDK_INT>=26&&current!=null&&player!=null&&player.isPlaying())enterPip();}
 
   void settingsDialog(){
     SharedPreferences p=getSharedPreferences(PREFS,MODE_PRIVATE);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(22),dp(12),dp(22),dp(6));
