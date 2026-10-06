@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
   }
   void bindSearch(){search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){}public void onTextChanged(CharSequence s,int a,int b,int c){filter();}public void afterTextChanged(android.text.Editable e){}});}
 
-  void loadPrefs(){SharedPreferences p=getSharedPreferences(PREFS,MODE_PRIVATE);favorites.addAll(p.getStringSet("favorites",Collections.emptySet()));String r=p.getString("recents","");if(!r.isEmpty())for(String s:r.split("\|"))if(!s.isEmpty())recents.add(s);}
+  void loadPrefs(){SharedPreferences p=getSharedPreferences(PREFS,MODE_PRIVATE);favorites.addAll(p.getStringSet("favorites",Collections.emptySet()));String r=p.getString("recents","");if(!r.isEmpty())for(String s:r.split("\\|"))if(!s.isEmpty())recents.add(s);}
   void savePrefs(){getSharedPreferences(PREFS,MODE_PRIVATE).edit().putStringSet("favorites",new HashSet<>(favorites)).putString("recents",joinRecents()).apply();}
   String joinRecents(){StringBuilder b=new StringBuilder();for(String id:recents){if(b.length()>0)b.append("|");b.append(id);}return b.toString();}
 
