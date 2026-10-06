@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: palmavision-build-${{ github.ref }}
+  group: palmavision-build-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
