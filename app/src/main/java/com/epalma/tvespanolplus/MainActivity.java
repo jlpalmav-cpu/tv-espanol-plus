@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
   ChannelAdapter adapter; ListView list; EditText search; TextView title,status,count,sourceLabel;
   Button favButton; LinearLayout leftPanel,topHeader,bottomBar; String mode="all"; int retries=0;
 
+  @UnstableApi
   @Override public void onCreate(Bundle b){super.onCreate(b);loadPrefs();buildUi();initPlayer();bindSearch();loadChannels();}
 
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
