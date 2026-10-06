@@ -5,7 +5,7 @@
   <uses-feature android:name="android.software.leanback" android:required="false"/>
   <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
   <application android:theme="@android:style/Theme.Material.NoActionBar" android:label="TV Español+" android:usesCleartextTraffic="true" android:banner="@drawable/tv_banner" android:icon="@drawable/app_icon">
-    <activity android:name=".MainActivity" android:screenOrientation="landscape" android:exported="true" android:banner="@drawable/tv_banner">
+    <activity android:name=".MainActivity" android:screenOrientation="landscape" android:exported="true" android:banner="@drawable/tv_banner" android:supportsPictureInPicture="true" android:resizeableActivity="true" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden|uiMode">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>

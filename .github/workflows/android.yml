@@ -1,7 +1,7 @@
-name: Android CI
+name: Android CI v1.7.0
 on:
   push:
-    branches: [ build-tvplus ]
+    branches: [ build-tvplus-17 ]
   workflow_dispatch:
 jobs:
   build:
@@ -15,14 +15,14 @@ jobs:
         with: { gradle-version: '8.10.2' }
       - name: Prepare verified channel list
         run: mkdir -p app/src/main/assets && cp TV_Espanol_Plus_VERIFICADA.m3u app/src/main/assets/
-      - name: Validate and build
+      - name: Validate list and build
         run: |
-          test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
+          test "$(grep -c '^#EXTINF:' app/src/main/assets/TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           gradle :app:lintDebug :app:assembleDebug
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -25
       - uses: actions/upload-artifact@v4
         with:
-          name: TV-Espanol-Plus-v1.6.0-debug
+          name: TV-Espanol-Plus-v1.7.0-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
