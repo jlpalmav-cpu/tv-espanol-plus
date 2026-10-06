@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
   void buildUi(){
     LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(10),dp(8),dp(10),dp(8));root.setBackgroundColor(Color.rgb(5,13,24));
     LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
-    TextView logo=text("▣  TV Español+",26);logo.setTypeface(null,1);top.addView(logo,new LinearLayout.LayoutParams(0,dp(52),1));
+    TextView logo=text("▣  TV Español+",26);logo.setTypeface(null,android.graphics.Typeface.BOLD);top.addView(logo,new LinearLayout.LayoutParams(0,dp(52),1));
     sourceText=text("Lista principal",12);sourceText.setTextColor(Color.LTGRAY);sourceText.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);top.addView(sourceText,new LinearLayout.LayoutParams(dp(250),dp(52)));
     Button settings=button("⚙ Configuración");top.addView(settings,new LinearLayout.LayoutParams(dp(150),dp(46)));root.addView(top);
 
@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
     list=new ListView(this);list.setDividerHeight(1);list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(26,43,59)));list.setBackground(bg(Color.rgb(8,20,34),10));left.addView(list,new LinearLayout.LayoutParams(-1,0,1));
 
     LinearLayout right=new LinearLayout(this);right.setOrientation(LinearLayout.VERTICAL);body.addView(right,new LinearLayout.LayoutParams(0,-1,1));
-    title=text("Seleccione un canal",21);title.setTypeface(null,1);right.addView(title,new LinearLayout.LayoutParams(-1,dp(46)));
+    title=text("Seleccione un canal",21);title.setTypeface(null,android.graphics.Typeface.BOLD);right.addView(title,new LinearLayout.LayoutParams(-1,dp(46)));
     playerView=new PlayerView(this);playerView.setFocusable(true);playerView.setUseController(true);playerView.setControllerAutoShow(true);right.addView(playerView,new LinearLayout.LayoutParams(-1,0,1));
     status=text("Listo",13);status.setTextColor(Color.rgb(176,195,211));right.addView(status,new LinearLayout.LayoutParams(-1,dp(32)));
     LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER);Button prev=button("◀ Anterior"),next=button("Siguiente ▶"),retry=button("↻ Reconectar"),more=button("⋮ Más");favButton=button("☆ Favorito");
