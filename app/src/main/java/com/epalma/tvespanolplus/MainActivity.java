@@ -1,6 +1,7 @@
 package com.epalma.tvespanolplus;
 
-import android.app.*;\nimport android.annotation.SuppressLint;
+import android.app.*;
+import android.annotation.SuppressLint;
 import android.os.*;
 import android.content.*;
 import android.content.res.Configuration;
