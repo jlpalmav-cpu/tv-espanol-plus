@@ -1,7 +1,6 @@
 package com.epalma.tvespanolplus;
 
 import android.app.*;
-import android.annotation.SuppressLint;
 import android.content.*;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -15,6 +14,7 @@ import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.fragment.app.FragmentActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.mediarouter.app.MediaRouteButton;
 import androidx.media3.common.*;
 import androidx.media3.common.util.UnstableApi;
@@ -59,7 +59,7 @@ public class MainActivity extends FragmentActivity {
     public void onSessionResumeFailed(CastSession s,int e){} public void onSessionSuspended(CastSession s,int reason){}
   };
 
-  @Override public void onCreate(Bundle b){super.onCreate(b);loadPrefs();try{castContext=CastContext.getSharedInstance(this);}catch(Exception ignored){}buildShell();initPlayer();showHome();loadSavedSource();if(castContext!=null)castContext.getSessionManager().addSessionManagerListener(castListener,CastSession.class);}
+  @Override public void onCreate(Bundle b){super.onCreate(b);loadPrefs();try{castContext=CastContext.getSharedInstance(this);}catch(Exception ignored){}buildShell();initPlayer();showHome();loadSavedSource();if(castContext!=null)castContext.getSessionManager().addSessionManagerListener(castListener,CastSession.class);getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){confirmExit();}});}
 
   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
   GradientDrawable rounded(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
@@ -224,8 +224,6 @@ public class MainActivity extends FragmentActivity {
   void savePrefs(){getSharedPreferences("tvplus",MODE_PRIVATE).edit().putStringSet("favorites",new HashSet<>(favorites)).putString("recents",joinRecents()).putBoolean("auto_retry",autoRetryEnabled).putInt("resize_mode",resizeMode).apply();}
   String joinRecents(){StringBuilder b=new StringBuilder();for(String id:recents){if(b.length()>0)b.append("|");b.append(id);}return b.toString();}
 
-  @Override public boolean dispatchKeyEvent(KeyEvent e){if(e.getAction()==KeyEvent.ACTION_DOWN){if(e.getKeyCode()==KeyEvent.KEYCODE_MEDIA_NEXT){step(1);return true;}if(e.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PREVIOUS){step(-1);return true;}}return super.dispatchKeyEvent(e);}
-  @SuppressLint("MissingSuperCall") @Override public void onBackPressed(){confirmExit();}
   @Override protected void onDestroy(){if(castContext!=null)castContext.getSessionManager().removeSessionManagerListener(castListener,CastSession.class);super.onDestroy();releaseDual();if(player!=null)player.release();io.shutdownNow();}
 
   static final Pattern GROUP=Pattern.compile("group-title=\\\"([^\\\"]*)\\\""),ID=Pattern.compile("tvg-id=\\\"([^\\\"]*)\\\"");
