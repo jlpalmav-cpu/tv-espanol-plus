@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
   }
   LinearLayout.LayoutParams ctrlLp(){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(112),dp(48));p.setMargins(dp(4),dp(4),dp(4),dp(4));return p;}
 
+  @UnstableApi
   void buildUi(){
     final int BG=Color.rgb(6,15,28), PANEL=Color.rgb(11,27,43), CARD=Color.rgb(18,38,60);
     LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(10),dp(8),dp(10),dp(8));
