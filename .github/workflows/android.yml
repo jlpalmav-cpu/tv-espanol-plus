@@ -21,8 +21,16 @@ jobs:
           gradle :app:lintDebug :app:assembleDebug
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose app/build/outputs/apk/debug/app-debug.apk
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | head -20
+      - name: Package source project
+        run: |
+          zip -r TV_Espanol_Plus_v1.7.0_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
           name: TV-Espanol-Plus-v1.7.0-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TV-Espanol-Plus-v1.7.0-project
+          path: TV_Espanol_Plus_v1.7.0_Project.zip
           if-no-files-found: error
