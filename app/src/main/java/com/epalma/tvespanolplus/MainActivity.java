@@ -1,6 +1,7 @@
 package com.epalma.tvespanolplus;
 
 import android.app.*;
+import android.annotation.SuppressLint;
 import android.content.*;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -224,7 +225,7 @@ public class MainActivity extends FragmentActivity {
   String joinRecents(){StringBuilder b=new StringBuilder();for(String id:recents){if(b.length()>0)b.append("|");b.append(id);}return b.toString();}
 
   @Override public boolean dispatchKeyEvent(KeyEvent e){if(e.getAction()==KeyEvent.ACTION_DOWN){if(e.getKeyCode()==KeyEvent.KEYCODE_MEDIA_NEXT){step(1);return true;}if(e.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PREVIOUS){step(-1);return true;}}return super.dispatchKeyEvent(e);}
-  @Override public void onBackPressed(){confirmExit();}
+  @SuppressLint("MissingSuperCall") @Override public void onBackPressed(){confirmExit();}
   @Override protected void onDestroy(){if(castContext!=null)castContext.getSessionManager().removeSessionManagerListener(castListener,CastSession.class);super.onDestroy();releaseDual();if(player!=null)player.release();io.shutdownNow();}
 
   static final Pattern GROUP=Pattern.compile("group-title=\\\"([^\\\"]*)\\\""),ID=Pattern.compile("tvg-id=\\\"([^\\\"]*)\\\"");
