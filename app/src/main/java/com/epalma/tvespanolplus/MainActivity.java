@@ -56,7 +56,7 @@ public class MainActivity extends Activity {
 
     LinearLayout right=new LinearLayout(this);right.setOrientation(LinearLayout.VERTICAL);body.addView(right,new LinearLayout.LayoutParams(0,-1,1));
     title=text("Seleccione un canal",21);title.setTypeface(null,android.graphics.Typeface.BOLD);right.addView(title,new LinearLayout.LayoutParams(-1,dp(46)));
-    playerView=new PlayerView(this);playerView.setFocusable(true);playerView.setUseController(true);playerView.setControllerAutoShow(true);right.addView(playerView,new LinearLayout.LayoutParams(-1,0,1));
+    playerView=new PlayerView(this);playerView.setFocusable(true);playerView.setUseController(true);right.addView(playerView,new LinearLayout.LayoutParams(-1,0,1));
     status=text("Listo",13);status.setTextColor(Color.rgb(176,195,211));right.addView(status,new LinearLayout.LayoutParams(-1,dp(32)));
     LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER);Button prev=button("◀ Anterior"),next=button("Siguiente ▶"),retry=button("↻ Reconectar"),more=button("⋮ Más");favButton=button("☆ Favorito");
     for(Button x:new Button[]{prev,favButton,next,retry,more})controls.addView(x,w1());right.addView(controls,new LinearLayout.LayoutParams(-1,dp(56)));
