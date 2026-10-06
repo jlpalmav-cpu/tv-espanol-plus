@@ -28,7 +28,7 @@ jobs:
           grep -q 'openFullscreen' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Vista doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'play-services-cast-framework:22.3.1' app/build.gradle
+          grep -q 'play-services-cast-framework:22.2.0' app/build.gradle
           grep -q 'OPTIONS_PROVIDER_CLASS_NAME' app/src/main/AndroidManifest.xml
           test -s app/src/main/res/drawable/palmavision_mark.webp
           test -s app/src/main/res/drawable/palmavision_brand_banner.webp
