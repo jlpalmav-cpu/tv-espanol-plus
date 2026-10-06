@@ -1,6 +1,6 @@
 package com.epalma.tvespanolplus;
 
-import android.app.*;
+import android.app.*;\nimport android.annotation.SuppressLint;
 import android.os.*;
 import android.content.*;
 import android.content.res.Configuration;
@@ -123,13 +123,13 @@ public class MainActivity extends Activity {
     catch(Exception e){toast(type==C.TRACK_TYPE_TEXT?"Este canal no ofrece subtítulos seleccionables":"Este canal no ofrece pistas de audio adicionales");}
   }
 
-  void enterPip(){
+  @SuppressLint(\"NewApi\")\n  void enterPip(){
     if(Build.VERSION.SDK_INT<26){toast("Picture-in-Picture requiere Android 8 o superior");return;}
     if(current==null){toast("Abra un canal antes de usar PiP");return;}
     PictureInPictureParams p=new PictureInPictureParams.Builder().setAspectRatio(new Rational(16,9)).build();enterPictureInPictureMode(p);
   }
-  @Override public void onPictureInPictureModeChanged(boolean pip, Configuration cfg){super.onPictureInPictureModeChanged(pip,cfg);leftPanel.setVisibility(pip?View.GONE:View.VISIBLE);topHeader.setVisibility(pip?View.GONE:View.VISIBLE);bottomBar.setVisibility(pip?View.GONE:View.VISIBLE);status.setVisibility(pip?View.GONE:View.VISIBLE);title.setVisibility(pip?View.GONE:View.VISIBLE);}
-  @Override protected void onUserLeaveHint(){super.onUserLeaveHint();boolean auto=getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean("auto_pip",false);if(auto&&Build.VERSION.SDK_INT>=26&&current!=null&&player!=null&&player.isPlaying())enterPip();}
+  @SuppressLint(\"NewApi\")\n  @Override public void onPictureInPictureModeChanged(boolean pip, Configuration cfg){super.onPictureInPictureModeChanged(pip,cfg);leftPanel.setVisibility(pip?View.GONE:View.VISIBLE);topHeader.setVisibility(pip?View.GONE:View.VISIBLE);bottomBar.setVisibility(pip?View.GONE:View.VISIBLE);status.setVisibility(pip?View.GONE:View.VISIBLE);title.setVisibility(pip?View.GONE:View.VISIBLE);}
+  @SuppressLint(\"NewApi\")\n  @Override protected void onUserLeaveHint(){super.onUserLeaveHint();boolean auto=getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean("auto_pip",false);if(auto&&Build.VERSION.SDK_INT>=26&&current!=null&&player!=null&&player.isPlaying())enterPip();}
 
   void settingsDialog(){
     SharedPreferences p=getSharedPreferences(PREFS,MODE_PRIVATE);LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(22),dp(12),dp(22),dp(6));
@@ -160,6 +160,6 @@ public class MainActivity extends Activity {
     @Override public int getCount(){return shown.size();}
     @Override public Object getItem(int p){return shown.get(p);}
     @Override public long getItemId(int p){return shown.get(p).id.hashCode();}
-    @Override public View getView(int p,View convert,ViewGroup parent){Channel c=shown.get(p);LinearLayout row;if(convert instanceof LinearLayout)row=(LinearLayout)convert;else{row=new LinearLayout(MainActivity.this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setFocusable(true);row.setBackground(bg(Color.rgb(14,31,49),8));TextView n=label("",15);n.setId(1001);n.setSingleLine(true);TextView g=label("",11);g.setId(1002);g.setTextColor(Color.LTGRAY);g.setSingleLine(true);row.addView(n,new LinearLayout.LayoutParams(-1,dp(26)));row.addView(g,new LinearLayout.LayoutParams(-1,dp(20)));row.setOnFocusChangeListener((v,has)->v.setBackground(bg(has?Color.rgb(34,78,111):Color.rgb(14,31,49),8)));}((TextView)row.findViewById(1001)).setText(c.name);((TextView)row.findViewById(1002)).setText(c.group);return row;}
+    @Override public View getView(int p,View convert,ViewGroup parent){Channel c=shown.get(p);LinearLayout row;if(convert instanceof LinearLayout)row=(LinearLayout)convert;else{row=new LinearLayout(MainActivity.this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setFocusable(true);row.setBackground(bg(Color.rgb(14,31,49),8));TextView n=label("",15);n.setSingleLine(true);TextView g=label("",11);g.setTextColor(Color.LTGRAY);g.setSingleLine(true);row.addView(n,new LinearLayout.LayoutParams(-1,dp(26)));row.addView(g,new LinearLayout.LayoutParams(-1,dp(20)));row.setOnFocusChangeListener((v,has)->v.setBackground(bg(has?Color.rgb(34,78,111):Color.rgb(14,31,49),8)));}((TextView)row.getChildAt(0)).setText(c.name);((TextView)row.getChildAt(1)).setText(c.group);return row;}
   }
 }
