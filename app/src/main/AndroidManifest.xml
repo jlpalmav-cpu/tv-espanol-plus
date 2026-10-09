@@ -10,7 +10,8 @@
       android:usesCleartextTraffic="true"
       android:allowBackup="false"
       android:banner="@drawable/palmavision_banner"
-      android:icon="@drawable/palmavision_icon">
+      android:icon="@drawable/pv_logo"
+      android:roundIcon="@drawable/pv_logo">
     <activity
         android:name=".MainActivity"
         android:exported="true"
