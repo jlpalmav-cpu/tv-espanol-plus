@@ -1,7 +1,7 @@
-name: PalmaVision v1.9.7 LIVE CI
+name: PalmaVision v1.9.9 UIUX Exact CI
 on:
   push:
-    branches: [ build-palmavision-live ]
+    branches: [ build-palmavision-uiux-exact ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '1.9.7'" app/build.gradle
+          grep -q "versionName '1.9.9'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -30,12 +30,24 @@ jobs:
           ! grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'CastContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'showGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '1.9.7 LIVE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '1.9.9 UI/UX EXACT' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Más categorías' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.pv_background' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.home_live' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.home_movies' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.home_series' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.home_music' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/res/drawable-nodpi/pv_background.webp
+          test -s app/src/main/res/drawable-nodpi/pv_logo.webp
+          test -s app/src/main/res/drawable-nodpi/home_live.webp
+          test -s app/src/main/res/drawable-nodpi/home_movies.webp
+          test -s app/src/main/res/drawable-nodpi/home_series.webp
+          test -s app/src/main/res/drawable-nodpi/home_music.webp
       - name: Lint, unit task and release build
         run: gradle :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
       - name: Verify APK integrity and manifest
@@ -45,27 +57,27 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='197' versionName='1.9.7'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='199' versionName='1.9.9'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v1.9.7-LIVE.apk
-          sha256sum PalmaVision-v1.9.7-LIVE.apk > PalmaVision-v1.9.7-LIVE.sha256.txt
+          cp "$APK" PalmaVision-v1.9.9-UIUX-EXACT.apk
+          sha256sum PalmaVision-v1.9.9-UIUX-EXACT.apk > PalmaVision-v1.9.9-UIUX-EXACT.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v1.9.7_LIVE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v1.9.9_UIUX_EXACT_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.9.7-LIVE-release
+          name: PalmaVision-v1.9.9-UIUX-EXACT-release
           path: |
-            PalmaVision-v1.9.7-LIVE.apk
-            PalmaVision-v1.9.7-LIVE.sha256.txt
+            PalmaVision-v1.9.9-UIUX-EXACT.apk
+            PalmaVision-v1.9.9-UIUX-EXACT.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.9.7-LIVE-project
-          path: PalmaVision_v1.9.7_LIVE_Project.zip
+          name: PalmaVision-v1.9.9-UIUX-EXACT-project
+          path: PalmaVision_v1.9.9_UIUX_EXACT_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -76,7 +88,7 @@ jobs:
           disable-animations: true
           script: |
             set -e
-            adb install -r PalmaVision-v1.9.7-LIVE.apk
+            adb install -r PalmaVision-v1.9.9-UIUX-EXACT.apk
             adb logcat -c
             adb shell am start -n com.epalma.tvespanolplus/.MainActivity
             sleep 8
