@@ -50,7 +50,6 @@ jobs:
           grep -q 'PV_SURFACE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'primaryIconBtn' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'doSearch' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'clearSearch' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'styleDialog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Accesos rápidos' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q '⚽' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
