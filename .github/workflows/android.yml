@@ -198,11 +198,13 @@ jobs:
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 33
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          ram-size: 2048M
           disable-animations: true
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
             set -eu
             adb start-server
