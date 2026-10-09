@@ -81,8 +81,8 @@ public class MainActivity extends Activity {
     getWindow().setStatusBarColor(NAVY);getWindow().setNavigationBarColor(NAVY);
     boolean phone=getResources().getConfiguration().screenWidthDp<600;
     FrameLayout root=new FrameLayout(this);
-    ImageView bg=new ImageView(this);bg.setImageResource(R.drawable.pv_background);bg.setScaleType(ImageView.ScaleType.CENTER_CROP);root.addView(bg,new FrameLayout.LayoutParams(-1,-1));
-    View shade=new View(this);shade.setBackgroundColor(Color.argb(phone?220:205,0,7,19));root.addView(shade,new FrameLayout.LayoutParams(-1,-1));
+    ImageView bg=new ImageView(this);bg.setImageResource(R.drawable.pv_background_v209);bg.setScaleType(ImageView.ScaleType.CENTER_CROP);root.addView(bg,new FrameLayout.LayoutParams(-1,-1));
+    View shade=new View(this);shade.setBackgroundColor(Color.argb(phone?118:102,0,7,19));root.addView(shade,new FrameLayout.LayoutParams(-1,-1));
     LinearLayout shell=new LinearLayout(this);shell.setOrientation(LinearLayout.VERTICAL);shell.setPadding(dp(phone?9:12),dp(5),dp(phone?9:12),dp(7));root.addView(shell,new FrameLayout.LayoutParams(-1,-1));
     shell.setOnApplyWindowInsetsListener((v,in)->{v.setPadding(dp(phone?9:12)+in.getSystemWindowInsetLeft(),dp(5)+in.getSystemWindowInsetTop(),dp(phone?9:12)+in.getSystemWindowInsetRight(),dp(7)+in.getSystemWindowInsetBottom());return in;});
     LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);top.setPadding(dp(2),0,dp(2),0);
