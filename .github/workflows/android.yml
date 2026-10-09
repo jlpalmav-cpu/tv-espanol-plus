@@ -1,7 +1,7 @@
-name: Android CI
+name: PalmaVision v1.9.6 CORE Clean CI
 on:
   push:
-    branches: [ build-tvplus ]
+    branches: [ build-palmavision-core-clean ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -20,13 +20,17 @@ jobs:
           set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '1.8.0'" app/build.gradle
+          grep -q "versionName '1.9.6'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Vista doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'Vista doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'CastContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'showGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '1.9.6 CORE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Más categorías' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
       - name: Lint, unit task and release build
         run: gradle :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
@@ -37,11 +41,11 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='180' versionName='1.8.0'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='196' versionName='1.9.6'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           test "$(grep -c '^uses-permission:' permissions.txt)" -eq 2
-          cp "$APK" PalmaVision-v1.8.0.apk
-          sha256sum PalmaVision-v1.8.0.apk > PalmaVision-v1.8.0.sha256.txt
+          cp "$APK" PalmaVision-v1.9.6-CORE.apk
+          sha256sum PalmaVision-v1.9.6-CORE.apk > PalmaVision-v1.9.6-CORE.sha256.txt
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -50,24 +54,33 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            adb install -r PalmaVision-v1.8.0.apk
+            set -e
+            adb install -r PalmaVision-v1.9.6-CORE.apk
+            adb logcat -c
             adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
             grep -q 'Status: ok' launch.txt
-            sleep 4
-            adb shell dumpsys activity activities | grep -q 'com.epalma.tvespanolplus/.MainActivity'
-            adb logcat -d -t 400 | grep -E 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus' && exit 1 || true
+            sleep 6
+            adb shell pidof com.epalma.tvespanolplus | tee pid.txt || true
+            adb logcat -d -t 1500 > smoke-logcat.txt
+            adb shell dumpsys activity activities > activities.txt
+            if [ ! -s pid.txt ]; then
+              grep -E 'FATAL EXCEPTION|AndroidRuntime|NoClassDefFoundError|ClassNotFoundException|Process: com.epalma.tvespanolplus' smoke-logcat.txt || true
+              exit 1
+            fi
+            grep -q 'com.epalma.tvespanolplus/.MainActivity' activities.txt
+            if grep -E 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus' smoke-logcat.txt; then exit 1; fi
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v1.8.0_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v1.9.6_CORE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.8.0-release
+          name: PalmaVision-v1.9.6-CORE-release
           path: |
-            PalmaVision-v1.8.0.apk
-            PalmaVision-v1.8.0.sha256.txt
+            PalmaVision-v1.9.6-CORE.apk
+            PalmaVision-v1.9.6-CORE.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v1.8.0-project
-          path: PalmaVision_v1.8.0_Project.zip
+          name: PalmaVision-v1.9.6-CORE-project
+          path: PalmaVision_v1.9.6_CORE_Project.zip
           if-no-files-found: error
