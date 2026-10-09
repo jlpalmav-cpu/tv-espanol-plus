@@ -83,7 +83,7 @@ public final class TvOutputUtil {
 
   public static String xmlEscape(String s){
     if(s==null)return "";
-    return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace(""","&quot;").replace("'","&apos;");
+    return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&apos;");
   }
 
   private static String tag(String xml,String tag){
