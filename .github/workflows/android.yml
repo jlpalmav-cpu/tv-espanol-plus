@@ -1,7 +1,7 @@
-name: PalmaVision v2.0.5 Language Guide UI CI
+name: PalmaVision v2.0.6 Guide Health Launcher CI
 on:
   push:
-    branches: [ build-palmavision-v205-language-guide-ui ]
+    branches: [ build-palmavision-v206-guide-health-launcher ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,7 +21,7 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '2.0.5'" app/build.gradle
+          grep -q "versionName '2.0.6'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -31,7 +31,7 @@ jobs:
           ! grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'CastContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'showGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.0.5 Language & Guide UI' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.0.6 Guide Health Launcher' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -80,6 +80,13 @@ jobs:
           grep -q 'showChannelSchedule' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'preferredAudioLang' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'programGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'detectedPlaylistEpgUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'EPG de la lista' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'HEALTH_OK' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'healthText(Channel ch)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'nexus-score' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'android:icon="@drawable/pv_logo"' app/src/main/AndroidManifest.xml
+          grep -q 'android:roundIcon="@drawable/pv_logo"' app/src/main/AndroidManifest.xml
           grep -q 'Elige un canal en vivo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Próximamente · bajo demanda' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showLivePlayer(String selectedCategory)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -100,27 +107,27 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='205' versionName='2.0.5'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='206' versionName='2.0.6'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.apk
-          sha256sum PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.apk > PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.sha256.txt
+          cp "$APK" PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.apk
+          sha256sum PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.apk > PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.0.5_LANGUAGE_GUIDE_UI_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.0.6_GUIDE_HEALTH_LAUNCHER_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI-release
+          name: PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER-release
           path: |
-            PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.apk
-            PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.sha256.txt
+            PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.apk
+            PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI-project
-          path: PalmaVision_v2.0.5_LANGUAGE_GUIDE_UI_Project.zip
+          name: PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER-project
+          path: PalmaVision_v2.0.6_GUIDE_HEALTH_LAUNCHER_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -131,7 +138,7 @@ jobs:
           disable-animations: true
           script: |
             set -e
-            adb install -r PalmaVision-v2.0.5-LANGUAGE-GUIDE-UI.apk
+            adb install -r PalmaVision-v2.0.6-GUIDE-HEALTH-LAUNCHER.apk
             adb logcat -c
             adb shell am start -n com.epalma.tvespanolplus/.MainActivity
             sleep 8
