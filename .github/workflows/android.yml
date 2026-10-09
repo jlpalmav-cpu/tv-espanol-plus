@@ -31,6 +31,14 @@ jobs:
           grep -q '2.0.8 Parental & Vista Doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Siguiente"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Reintentar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Pantalla"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Favorito"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'controlBtn("Verificar Canal"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'controlBtn("Ajustar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'controlBtn("Más"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_background' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
