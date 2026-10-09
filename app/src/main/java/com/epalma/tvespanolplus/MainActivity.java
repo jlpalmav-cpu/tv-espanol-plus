@@ -35,8 +35,8 @@ public class MainActivity extends Activity {
   final LinkedHashSet<String> favorites=new LinkedHashSet<>();
   final ArrayDeque<String> recents=new ArrayDeque<>();
   ExoPlayer player; PlayerView playerView; FrameLayout homePlayerHolder, contentFrame;
-  Channel current, previous; ArrayAdapter<String> adapter; ListView channelList; EditText search; TextView status,count,sourceText,title;
-  Button favButton; View playerEmpty; String mode="all", category="Todos"; int retries=0, resizeMode=0, playToken=0; boolean autoRetryEnabled=true;
+  Channel current, previous; ArrayAdapter<String> adapter; ListView channelList; EditText search; TextView status,count,sourceText,title,screenTitle;
+  Button favButton,homeButton,exitButton; View playerEmpty; String mode="all", category="Todos", page="home"; int retries=0, resizeMode=0, playToken=0; boolean autoRetryEnabled=true;
   final Handler mainHandler=new Handler(Looper.getMainLooper()); Runnable startupWatchdog; long connectStartedAt=0L; String lastHealth="Sin verificar";
 
   @Override public void onCreate(Bundle b){super.onCreate(b);loadPrefs();buildShell();initPlayer();showHome();loadSavedSource();}
