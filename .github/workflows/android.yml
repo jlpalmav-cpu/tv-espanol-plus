@@ -31,7 +31,11 @@ jobs:
           ! grep -q 'CastContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'showGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q '1.9.7 LIVE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Más categorías' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java\n          grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java\n          grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java\n          grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java\n          grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Más categorías' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
       - name: Lint, unit task and release build
         run: gradle :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
       - name: Verify APK integrity and manifest
@@ -41,7 +45,7 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='196' versionName='1.9.6'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='197' versionName='1.9.7'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
