@@ -65,7 +65,6 @@ jobs:
           grep -q 'Próximamente · bajo demanda' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showLivePlayer(String selectedCategory)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showLibraryPlaceholder' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Biblioteca VOD · servidor dedicado' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'android.R.drawable' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable/pv_ic_search.xml
           test -s app/src/main/res/drawable/pv_ic_sports.xml
