@@ -41,12 +41,12 @@ jobs:
           ! grep -q 'controlBtn("Más"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'R.drawable.pv_background' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.home_movies' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.home_series' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.home_music' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/res/drawable-nodpi/pv_background.webp
+          test -s app/src/main/res/drawable-nodpi/pv_background_v209.webp
           test -s app/src/main/res/drawable-nodpi/pv_logo.webp
           test -s app/src/main/res/drawable-nodpi/home_live.webp
           test -s app/src/main/res/drawable-nodpi/home_movies.webp
@@ -100,7 +100,7 @@ jobs:
           grep -q 'ACTION_CAST_SETTINGS' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'exitButton.setVisibility(home?View.VISIBLE:View.GONE)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable/pv_ic_cast.xml
-          ! grep -q 'Salir de PalmaVision' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'dangerBtn("Salir de PalmaVision")' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Vista Doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Control parental' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
