@@ -204,7 +204,10 @@ jobs:
           profile: pixel_2
           disable-animations: true
           script: |
-            set -euo pipefail
+            set -eu
+            adb start-server
+            adb wait-for-device
+            adb shell getprop sys.boot_completed | grep -q 1
             adb install -r PalmaVision-v2.2.0-SMART-TV-OUTPUT.apk
             adb logcat -c
             python3 .github/ci/ui_smoke.py
