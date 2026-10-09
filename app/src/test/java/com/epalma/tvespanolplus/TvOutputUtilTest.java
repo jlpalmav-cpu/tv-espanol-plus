@@ -26,12 +26,23 @@ public class TvOutputUtilTest {
     assertTrue(mira>cast);
   }
 
+  @Test public void dlnaTreatsHlsAsUncertainButTsAsFriendly(){
+    assertFalse(TvOutputUtil.dlnaStreamFriendly("https://example.com/live/playlist.m3u8"));
+    assertTrue(TvOutputUtil.dlnaStreamFriendly("https://example.com/live/channel.ts"));
+  }
+
   @Test public void parsesSsdpAndDlnaDescription(){
     String ssdp="HTTP/1.1 200 OK\r\nLOCATION: http://192.168.1.20:1400/xml/device.xml\r\nUSN: uuid:test\r\n\r\n";
     assertEquals("http://192.168.1.20:1400/xml/device.xml",TvOutputUtil.header(ssdp,"LOCATION"));
     String xml="<root><device><friendlyName>TV Sala</friendlyName><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType><controlURL>/MediaRenderer/AVTransport/Control</controlURL></service></serviceList></device></root>";
     assertEquals("TV Sala",TvOutputUtil.friendlyName(xml));
     assertEquals("/MediaRenderer/AVTransport/Control",TvOutputUtil.avTransportControlUrl(xml));
+    assertEquals("urn:schemas-upnp-org:service:AVTransport:1",TvOutputUtil.avTransportServiceType(xml));
     assertEquals("http://192.168.1.20:1400/MediaRenderer/AVTransport/Control",TvOutputUtil.resolveControlUrl("http://192.168.1.20:1400/xml/device.xml","/MediaRenderer/AVTransport/Control"));
+  }
+
+  @Test public void parsesUpnpError(){
+    String xml="<UPnPError><errorCode>714</errorCode><errorDescription>Illegal MIME-type</errorDescription></UPnPError>";
+    assertEquals("UPnP 714 · Illegal MIME-type",TvOutputUtil.upnpError(xml));
   }
 }
