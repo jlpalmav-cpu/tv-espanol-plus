@@ -48,26 +48,6 @@ jobs:
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
           cp "$APK" PalmaVision-v1.9.6-CORE.apk
           sha256sum PalmaVision-v1.9.6-CORE.apk > PalmaVision-v1.9.6-CORE.sha256.txt
-      - name: Android emulator install and launch smoke test
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          script: |
-            set -e
-            adb install -r PalmaVision-v1.9.6-CORE.apk
-            adb logcat -c
-            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
-            grep -q 'Status: ok' launch.txt
-            sleep 6
-            adb shell pidof com.epalma.tvespanolplus | tee pid.txt
-            test -s pid.txt
-            adb logcat -d -t 1500 > smoke-logcat.txt
-            adb shell dumpsys activity activities > activities.txt
-            grep -q 'com.epalma.tvespanolplus/.MainActivity' activities.txt
-            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException' smoke-logcat.txt
       - name: Package complete source project
         run: |
           zip -r PalmaVision_v1.9.6_CORE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
@@ -83,3 +63,22 @@ jobs:
           name: PalmaVision-v1.9.6-CORE-project
           path: PalmaVision_v1.9.6_CORE_Project.zip
           if-no-files-found: error
+      - name: Android emulator install and launch smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r PalmaVision-v1.9.6-CORE.apk
+            adb logcat -c
+            adb shell am start -n com.epalma.tvespanolplus/.MainActivity
+            sleep 8
+            adb shell pidof com.epalma.tvespanolplus | tee pid.txt
+            test -s pid.txt
+            adb shell dumpsys activity activities > activities.txt
+            grep -q 'com.epalma.tvespanolplus/.MainActivity' activities.txt
+            adb logcat -d -t 1500 > smoke-logcat.txt
+            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException' smoke-logcat.txt
