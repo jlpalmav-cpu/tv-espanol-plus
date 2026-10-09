@@ -12,6 +12,9 @@
       android:banner="@drawable/palmavision_banner"
       android:icon="@drawable/pv_logo"
       android:roundIcon="@drawable/pv_logo">
+    <meta-data
+        android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+        android:value="com.epalma.tvespanolplus.CastOptionsProvider"/>
     <activity
         android:name=".MainActivity"
         android:exported="true"
