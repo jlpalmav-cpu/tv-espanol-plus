@@ -62,15 +62,12 @@ jobs:
             adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity | tee launch.txt
             grep -q 'Status: ok' launch.txt
             sleep 6
-            adb shell pidof com.epalma.tvespanolplus | tee pid.txt || true
+            adb shell pidof com.epalma.tvespanolplus | tee pid.txt
+            test -s pid.txt
             adb logcat -d -t 1500 > smoke-logcat.txt
             adb shell dumpsys activity activities > activities.txt
-            if [ ! -s pid.txt ]; then
-              grep -E 'FATAL EXCEPTION|AndroidRuntime|NoClassDefFoundError|ClassNotFoundException|Process: com.epalma.tvespanolplus' smoke-logcat.txt || true
-              exit 1
-            fi
             grep -q 'com.epalma.tvespanolplus/.MainActivity' activities.txt
-            if grep -E 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus' smoke-logcat.txt; then exit 1; fi
+            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException' smoke-logcat.txt
       - name: Package complete source project
         run: |
           zip -r PalmaVision_v1.9.6_CORE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
