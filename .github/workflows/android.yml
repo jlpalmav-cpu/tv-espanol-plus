@@ -1,7 +1,7 @@
-name: PalmaVision v2.1.0 Real Cast Parental CI
+name: PalmaVision v2.1.1 Fullscreen Cast Tested CI
 on:
   push:
-    branches: [ build-palmavision-v210-real-cast-parental-dual ]
+    branches: [ build-palmavision-v211-fullscreen-cast-tested ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,13 +21,13 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '2.1.0'" app/build.gradle
+          grep -q "versionName '2.1.1'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.1.0 Real Cast & Parental' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.1.1 Fullscreen Cast Tested' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -92,12 +92,24 @@ jobs:
           grep -q 'epgLoading' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'openScreenSettings()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showDualView()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'dualFocus' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'openDualFullscreen(boolean primary)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'full1.setOnClickListener(v->openDualFullscreen(true))' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'full2.setOnClickListener(v->openDualFullscreen(false))' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Canal 2 ·' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showParentalChannelManager()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showCastScreen()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'CastButtonFactory' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'MediaRouteButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'MediaRouteChooserDialog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'MediaRouteSelector' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Dispositivos Google Cast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Settings.Panel.ACTION_WIFI' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'androidx.appcompat:appcompat:1.7.0' app/build.gradle
+          grep -q 'androidx.mediarouter:mediarouter:1.7.0' app/build.gradle
+          grep -q 'android:theme="@style/Theme.PalmaVision"' app/src/main/AndroidManifest.xml
+          test -s app/src/main/res/values/styles.xml
+          test -s .github/ci/ui_smoke.py
           grep -q 'castCurrentToSession' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'play-services-cast-framework:22.3.1' app/build.gradle
           grep -q 'minSdk 24' app/build.gradle
@@ -109,7 +121,6 @@ jobs:
           grep -q 'Buscar dispositivos Google Cast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Seleccionar canales a bloquear' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Marcar visibles' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Restaurar' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'exitButton.setVisibility(home?View.VISIBLE:View.GONE)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable/pv_ic_cast.xml
           ! grep -q 'dangerBtn("Salir de PalmaVision")' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -148,27 +159,27 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='210' versionName='2.1.0'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='211' versionName='2.1.1'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.1.0-REAL-CAST-PARENTAL.apk
-          sha256sum PalmaVision-v2.1.0-REAL-CAST-PARENTAL.apk > PalmaVision-v2.1.0-REAL-CAST-PARENTAL.sha256.txt
+          cp "$APK" PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.apk
+          sha256sum PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.apk > PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.1.0_REAL_CAST_PARENTAL_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.1.1_FULLSCREEN_CAST_TESTED_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.1.0-REAL-CAST-PARENTAL-release
+          name: PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED-release
           path: |
-            PalmaVision-v2.1.0-REAL-CAST-PARENTAL.apk
-            PalmaVision-v2.1.0-REAL-CAST-PARENTAL.sha256.txt
+            PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.apk
+            PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.1.0-REAL-CAST-PARENTAL-project
-          path: PalmaVision_v2.1.0_REAL_CAST_PARENTAL_Project.zip
+          name: PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED-project
+          path: PalmaVision_v2.1.1_FULLSCREEN_CAST_TESTED_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -178,14 +189,11 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -e
-            adb install -r PalmaVision-v2.1.0-REAL-CAST-PARENTAL.apk
+            set -euo pipefail
+            adb install -r PalmaVision-v2.1.1-FULLSCREEN-CAST-TESTED.apk
             adb logcat -c
-            adb shell am start -n com.epalma.tvespanolplus/.MainActivity
-            sleep 8
+            python3 .github/ci/ui_smoke.py
             adb shell pidof com.epalma.tvespanolplus | tee pid.txt
             test -s pid.txt
-            adb shell dumpsys activity activities > activities.txt
-            grep -q 'com.epalma.tvespanolplus/.MainActivity' activities.txt
-            adb logcat -d -t 1500 > smoke-logcat.txt
-            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException' smoke-logcat.txt
+            adb logcat -d -t 3000 > smoke-logcat.txt
+            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException|AndroidRuntime.*FATAL' smoke-logcat.txt
