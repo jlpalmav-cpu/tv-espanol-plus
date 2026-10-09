@@ -15,6 +15,14 @@ public final class TvOutputUtil {
     return u.contains(".m3u8")||u.contains(".mp4")||u.contains(".ts")||u.contains("output=ts")||u.contains("format=m3u8");
   }
 
+  public static boolean dlnaStreamFriendly(String url){
+    if(url==null)return false;
+    String u=url.trim().toLowerCase(Locale.ROOT);
+    if(!(u.startsWith("http://")||u.startsWith("https://")))return false;
+    // DLNA renderers vary widely on HLS; MPEG-TS/MP4 are safer direct-play candidates.
+    return u.contains(".mp4")||u.contains(".ts")||u.contains("output=ts");
+  }
+
   public static int score(String tech, boolean internet, boolean localNetwork, boolean directFriendly, boolean actualDevice){
     String t=tech==null?"":tech.toUpperCase(Locale.ROOT);
     int s;
@@ -23,9 +31,9 @@ public final class TvOutputUtil {
       if(actualDevice)s+=3;
       if(!directFriendly)s-=18;
     }else if("DLNA".equals(t)){
-      s=localNetwork?84:48;
-      if(actualDevice)s+=5;
-      if(!directFriendly)s-=14;
+      s=localNetwork?78:45;
+      if(actualDevice)s+=4;
+      if(!directFriendly)s-=18;
       if(!internet&&localNetwork)s+=3;
     }else if("MIRACAST".equals(t)){
       s=internet?78:96;
@@ -48,7 +56,7 @@ public final class TvOutputUtil {
     }
     if("DLNA".equals(t)){
       if(!localNetwork)return "DLNA requiere que teléfono y Smart TV compartan la misma red local.";
-      if(!directFriendly)return "Smart TV detectado, aunque este stream puede no ser compatible con reproducción directa.";
+      if(!directFriendly)return "Smart TV detectado, pero este canal puede usar HLS u otro formato que muchos receptores DLNA no reproducen directamente.";
       return actualDevice?"Smart TV/renderer DLNA detectado en la red local; no necesita instalar nada en el TV.":"DLNA disponible en red local; se buscarán Smart TVs compatibles.";
     }
     if("MIRACAST".equals(t)){
@@ -70,11 +78,27 @@ public final class TvOutputUtil {
     return tag(xml,"friendlyName");
   }
 
+  public static String avTransportServiceType(String xml){
+    if(xml==null)return "";
+    Pattern service=Pattern.compile("(?is)<service>.*?<serviceType>\\s*(urn:schemas-upnp-org:service:AVTransport:[^<]+)</serviceType>.*?</service>");
+    Matcher m=service.matcher(xml);
+    return m.find()?decodeXml(m.group(1).trim()):"";
+  }
+
   public static String avTransportControlUrl(String xml){
     if(xml==null)return "";
     Pattern service=Pattern.compile("(?is)<service>.*?<serviceType>\\s*urn:schemas-upnp-org:service:AVTransport:[^<]+</serviceType>.*?<controlURL>\\s*([^<]+)\\s*</controlURL>.*?</service>");
     Matcher m=service.matcher(xml);
     return m.find()?decodeXml(m.group(1).trim()):"";
+  }
+
+  public static String upnpError(String xml){
+    String code=tag(xml,"errorCode");
+    String desc=tag(xml,"errorDescription");
+    if(code.isEmpty()&&desc.isEmpty())return "";
+    if(code.isEmpty())return desc;
+    if(desc.isEmpty())return "UPnP "+code;
+    return "UPnP "+code+" · "+desc;
   }
 
   public static String resolveControlUrl(String location,String control){
