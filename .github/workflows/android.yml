@@ -1,7 +1,7 @@
-name: PalmaVision v2.2.0 Smart TV Output CI
+name: PalmaVision v2.2.1 TV Output Fixes CI
 on:
   push:
-    branches: [ build-palmavision-v220-smart-tv-output ]
+    branches: [ build-palmavision-v221-tv-output-fixes ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,13 +21,13 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionName '2.2.0'" app/build.gradle
+          grep -q "versionName '2.2.1'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.2.0 Smart TV Output' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.2.1 TV Output Fixes' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -133,6 +133,13 @@ jobs:
           grep -q 'Pantalla inalámbrica / Miracast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Google Cast / Chromecast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'DLNA / UPnP' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'currentCastSession()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'currentDlnaFriendly()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Miracast no expuesto por este Android' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'TvOutputUtil.avTransportServiceType' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'UPnP "+code' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'dlnaStreamFriendly' app/src/main/java/com/epalma/tvespanolplus/TvOutputUtil.java
+          grep -q 'parsesUpnpError' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
           grep -q 'Marcar visibles' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'exitButton.setVisibility(home?View.VISIBLE:View.GONE)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable/pv_ic_cast.xml
@@ -172,28 +179,28 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='220' versionName='2.2.0'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='221' versionName='2.2.1'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.2.0-SMART-TV-OUTPUT.apk
-          sha256sum PalmaVision-v2.2.0-SMART-TV-OUTPUT.apk > PalmaVision-v2.2.0-SMART-TV-OUTPUT.sha256.txt
+          cp "$APK" PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
+          sha256sum PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk > PalmaVision-v2.2.1-TV-OUTPUT-FIXES.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.2.0_SMART_TV_OUTPUT_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.2.1_TV_OUTPUT_FIXES_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.0-SMART-TV-OUTPUT-release
+          name: PalmaVision-v2.2.1-TV-OUTPUT-FIXES-release
           path: |
-            PalmaVision-v2.2.0-SMART-TV-OUTPUT.apk
-            PalmaVision-v2.2.0-SMART-TV-OUTPUT.sha256.txt
+            PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
+            PalmaVision-v2.2.1-TV-OUTPUT-FIXES.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.0-SMART-TV-OUTPUT-project
-          path: PalmaVision_v2.2.0_SMART_TV_OUTPUT_Project.zip
+          name: PalmaVision-v2.2.1-TV-OUTPUT-FIXES-project
+          path: PalmaVision_v2.2.1_TV_OUTPUT_FIXES_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -210,7 +217,7 @@ jobs:
             adb start-server
             adb wait-for-device
             adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r PalmaVision-v2.2.0-SMART-TV-OUTPUT.apk
+            adb install -r PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
             adb logcat -c
             python3 .github/ci/ui_smoke.py
             adb shell pidof com.epalma.tvespanolplus | tee pid.txt
