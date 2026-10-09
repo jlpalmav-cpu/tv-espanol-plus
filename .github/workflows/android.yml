@@ -1,7 +1,7 @@
-name: PalmaVision v2.0.2 M3U Groups CI
+name: PalmaVision v2.0.3 Performance Sources CI
 on:
   push:
-    branches: [ build-palmavision-v202-m3u-groups ]
+    branches: [ build-palmavision-v203-performance-sources ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 2
-          grep -q "versionName '2.0.2'" app/build.gradle
+          grep -q "versionName '2.0.3'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -30,7 +30,7 @@ jobs:
           ! grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'CastContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'showGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.0.2 M3U Groups' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.0.3 Performance & Sources' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -60,6 +60,11 @@ jobs:
           grep -q 'Cine en vivo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Entretenimiento' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Explorar por país' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'rebuildChannelIndex()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'baseForCategory(String cat)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Servidor IPTV / Xtream' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'xtreamM3uUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'source_type' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Elige un canal en vivo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Próximamente · bajo demanda' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showLivePlayer(String selectedCategory)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -80,27 +85,27 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='202' versionName='2.0.2'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='203' versionName='2.0.3'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.0.2-M3U-GROUPS.apk
-          sha256sum PalmaVision-v2.0.2-M3U-GROUPS.apk > PalmaVision-v2.0.2-M3U-GROUPS.sha256.txt
+          cp "$APK" PalmaVision-v2.0.3-PERFORMANCE-SOURCES.apk
+          sha256sum PalmaVision-v2.0.3-PERFORMANCE-SOURCES.apk > PalmaVision-v2.0.3-PERFORMANCE-SOURCES.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.0.2_M3U_GROUPS_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.0.3_PERFORMANCE_SOURCES_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.0.2-M3U-GROUPS-release
+          name: PalmaVision-v2.0.3-PERFORMANCE-SOURCES-release
           path: |
-            PalmaVision-v2.0.2-M3U-GROUPS.apk
-            PalmaVision-v2.0.2-M3U-GROUPS.sha256.txt
+            PalmaVision-v2.0.3-PERFORMANCE-SOURCES.apk
+            PalmaVision-v2.0.3-PERFORMANCE-SOURCES.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.0.2-M3U-GROUPS-project
-          path: PalmaVision_v2.0.2_M3U_GROUPS_Project.zip
+          name: PalmaVision-v2.0.3-PERFORMANCE-SOURCES-project
+          path: PalmaVision_v2.0.3_PERFORMANCE_SOURCES_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -111,7 +116,7 @@ jobs:
           disable-animations: true
           script: |
             set -e
-            adb install -r PalmaVision-v2.0.2-M3U-GROUPS.apk
+            adb install -r PalmaVision-v2.0.3-PERFORMANCE-SOURCES.apk
             adb logcat -c
             adb shell am start -n com.epalma.tvespanolplus/.MainActivity
             sleep 8
