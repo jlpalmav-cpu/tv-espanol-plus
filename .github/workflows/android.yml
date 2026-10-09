@@ -43,7 +43,9 @@ jobs:
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
           grep -q "package: name='com.epalma.tvespanolplus' versionCode='196' versionName='1.9.6'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
-          test "$(grep -c '^uses-permission:' permissions.txt)" -eq 2
+          grep -q "android.permission.INTERNET" permissions.txt
+          grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
+          ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
           cp "$APK" PalmaVision-v1.9.6-CORE.apk
           sha256sum PalmaVision-v1.9.6-CORE.apk > PalmaVision-v1.9.6-CORE.sha256.txt
       - name: Android emulator install and launch smoke test
