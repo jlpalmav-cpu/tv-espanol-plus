@@ -123,20 +123,25 @@ tap_text("Guardar bloqueos")
 wait_text("Control parental")
 wait_text("1 canales bloqueados")
 
-# Cast: screen must be functional, chooser must actually open
+# Smart TV output: ranked recommendations must render and Cast chooser must open
 back()
 wait_text("Enviar a TV")
 tap_text("Enviar a TV")
-wait_text("Buscar dispositivos Google Cast")
-wait_text("Conectar / cambiar Wi")
-wait_text("Duplicar pantalla / Miracast")
-tap_text("Buscar dispositivos Google Cast")
+wait_text("Enviar a TV / Proyector")
+wait_text("Mejores opciones disponibles")
+wait_text("#1")
+wait_text("RECOMENDADO")
+wait_text("Google Cast")
+wait_text("Analizar de nuevo")
+wait_text("Cambiar Wi")
+
+tap_text("Seleccionar dispositivo Cast")
 wait_text("Dispositivos Google Cast")
 back()
-wait_text("Enviar a TV")
+wait_text("Enviar a TV / Proyector")
 
 # Wi-Fi network chooser must launch Android Settings/Panel
-tap_text("Conectar / cambiar Wi")
+tap_text("Cambiar Wi")
 time.sleep(2)
 state=resumed()
 if "com.android.settings" not in state:
@@ -147,4 +152,4 @@ print("OK Wi-Fi selector opened")
 back()
 time.sleep(1)
 adb("logcat","-d","-t","2500")
-print("PALMAVISION UI SMOKE: PASS")
+print("PALMAVISION v2.2.0 UI SMOKE: PASS")
