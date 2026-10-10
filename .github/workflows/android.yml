@@ -169,4 +169,4 @@ jobs:
             adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity
             sleep 10
             adb shell pidof com.epalma.tvespanolplus | grep -q .
-            adb shell dumpsys package com.epalma.tvespanolplus | grep -q 'versionName=2.4.4'
+            adb shell dumpsys package com.epalma.tvespanolplus | grep -q 'versionName=2.4.6'
