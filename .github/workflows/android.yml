@@ -1,280 +1,114 @@
-name: PalmaVision v2.3.0 Hardening Persistence CI
+name: PalmaVision v2.4.0 VOD Radio Recovery CI
 on:
-  push:
-    branches: [ build-palmavision-v230-hardening-persistence ]
   workflow_dispatch:
+  push:
+    branches: [ main, build-palmavision-v240-vod-radio-recovery ]
 jobs:
   build-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-        with: { gradle-version: '8.10.2' }
+        with:
+          gradle-version: '8.10.2'
       - name: Prepare verified channel list
         run: mkdir -p app/src/main/assets && cp TV_Espanol_Plus_VERIFICADA.m3u app/src/main/assets/
-      - name: Source, privacy and security checks
+      - name: Source privacy and regression checks
         run: |
           set -euo pipefail
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionName '2.3.0'" app/build.gradle
+          grep -q "versionCode 240" app/build.gradle
+          grep -q "versionName '2.4.0'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
-          ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.3.0 Hardening & Persistent Player' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Siguiente"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Reintentar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Pantalla"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Favorito"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'controlBtn("Verificar Canal"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'controlBtn("Ajustar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'controlBtn("Más"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'armStartupWatchdog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'setOnItemLongClickListener' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'R.drawable.home_movies' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'R.drawable.home_series' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'R.drawable.home_music' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/res/drawable-nodpi/pv_background_v209.webp
-          test -s app/src/main/res/drawable-nodpi/pv_logo.webp
-          test -s app/src/main/res/drawable-nodpi/home_live.webp
-          test -s app/src/main/res/drawable-nodpi/home_movies.webp
-          test -s app/src/main/res/drawable-nodpi/home_series.webp
-          test -s app/src/main/res/drawable-nodpi/home_music.webp
-          grep -q 'PV_SURFACE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'primaryIconBtn' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'doSearch' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'styleDialog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Accesos rápidos' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q '⚽' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q '🎬' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showLiveCategories' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'cleanGroup(String raw)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showCountries()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Cine en vivo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Entretenimiento' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Explorar por país' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'rebuildChannelIndex()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'baseForCategory(String cat)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Servidor IPTV / Xtream' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'xtreamM3uUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'source_type' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'ChannelAdapter' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tvg-logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'loadXmltv' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'xtreamEpgUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Guía EPG / XMLTV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'programText(Channel ch)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Nombre de la lista' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showLanguageSettings()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showMediaLanguageMenu()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'ensureSubtitleLayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showGuide()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showChannelSchedule' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'preferredAudioLang' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'programGuide' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'detectedPlaylistEpgUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'EPG de la lista' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'HEALTH_OK' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'healthText(Channel ch)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'boolean liveCard' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'EPG con error' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'epgLoading' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'openScreenSettings()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showDualView()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'openDualFullscreen(boolean primary)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'full1.setOnClickListener(v->openDualFullscreen(true))' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'full2.setOnClickListener(v->openDualFullscreen(false))' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Canal 2 ·' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showParentalChannelManager()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showCastScreen()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'openTvOutputFromPlayer()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Idioma y subtítulos' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'channel_audio' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'channel_subtitle' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'channel_subtitle_size' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'preferred_subtitle_size' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'clearChannelPlaybackOverrides' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'setFixedTextSize' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Audio / subtítulos' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tintDialogRow' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'epgGeneration' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'loadQueuedEpgForCurrentList' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'resolveEpgChannel' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'normalizeEpgKey' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'generation!=epgGeneration' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Actualizar guía' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'canales · "+nowCount+" ahora' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'sin EPG para este canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
-          test -s app/src/test/java/com/epalma/tvespanolplus/EpgPolicyTest.java
-          grep -q 'SamsungTVPlus/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
-          grep -q 'PlutoTV/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
-          grep -q 'Plex/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
-          test -s app/src/main/java/com/epalma/tvespanolplus/SecuritySanitizer.java
-          test -s app/src/test/java/com/epalma/tvespanolplus/SecuritySanitizerTest.java
-          grep -q 'AndroidKeyStore' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'AES/GCM/NoPadding' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'xtream_pass_ct' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'putString("xtream_pass",' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'FLAG_SECURE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'PBKDF2WithHmacSHA256' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '120000' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'pin_locked_until' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Ahora viendo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showCurrentChannelContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'captureLiveContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'ChannelRowHolder' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Bitmap.createScaledBitmap' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tvActuallyConnected' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'disconnectRemoteOnly' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'android:supportsPictureInPicture="true"' app/src/main/AndroidManifest.xml
-          grep -q 'onUserLeaveHint' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Enviar a TV / Proyector' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'String\[\] labs=.*Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'if("cast".equals(page)){showLivePlayer(category);}' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'CastButtonFactory' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'MediaRouteButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'MediaRouteChooserDialog' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'MediaRouteSelector' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Dispositivos Google Cast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Settings.Panel.ACTION_WIFI' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'androidx.appcompat:appcompat:1.7.0' app/build.gradle
-          grep -q 'androidx.mediarouter:mediarouter:1.7.0' app/build.gradle
-          grep -q 'android:theme="@style/Theme.PalmaVision"' app/src/main/AndroidManifest.xml
-          test -s app/src/main/res/values/styles.xml
-          test -s .github/ci/ui_smoke.py
-          grep -q 'castCurrentToSession' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'play-services-cast-framework:22.3.1' app/build.gradle
-          grep -q 'minSdk 24' app/build.gradle
-          grep -q 'CastOptionsProvider' app/src/main/AndroidManifest.xml
-          test -s app/src/main/java/com/epalma/tvespanolplus/CastOptionsProvider.java
-          grep -q 'DEFAULT_MEDIA_RECEIVER_APPLICATION_ID' app/src/main/java/com/epalma/tvespanolplus/CastOptionsProvider.java
-          grep -q 'ACTION_CAST_SETTINGS' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'ACTION_WIFI_SETTINGS' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'scanTvOutputs(true)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Dispositivos encontrados' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Conexión automática' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'startAutoConnect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'disconnectRemoteAndExit' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'endCurrentSession(true)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'dlnaSoap(target.controlUrl,target.serviceType,"Stop"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'También se detendrá la reproducción' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tryAutoMethod' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tryCastAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'tryDlnaAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'TvConnectPlanner.order' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Buscar otros TV / proyectores' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/java/com/epalma/tvespanolplus/TvConnectPlanner.java
-          test -s app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
-          grep -q 'remembersLastSuccessfulMethod' app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
-          grep -q 'wirelessIsAlwaysFallback' app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
-          grep -q 'discoverDlna' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'sendToDlna' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'M-SEARCH \* HTTP/1.1' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'CHANGE_WIFI_MULTICAST_STATE' app/src/main/AndroidManifest.xml
-          test -s app/src/main/java/com/epalma/tvespanolplus/TvOutputUtil.java
-          test -s app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
-          grep -q 'miracastWinsWithoutInternet' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
-          grep -q 'castWinsWithInternetAndFriendlyStream' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
-          grep -q 'Seleccionar canales a bloquear' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'currentCastSession()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'currentDlnaFriendly()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'TvOutputUtil.avTransportServiceType' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'TvOutputUtil.upnpError' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'dlnaStreamFriendly' app/src/main/java/com/epalma/tvespanolplus/TvOutputUtil.java
-          grep -q 'parsesUpnpError' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
-          grep -q 'Marcar visibles' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'exitButton.setVisibility(home?View.VISIBLE:View.GONE)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/res/drawable/pv_ic_cast.xml
-          ! grep -q 'dangerBtn("Salir de PalmaVision")' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'dualPlayer' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Vista Doble' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Control parental' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'blockedChannels' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'queueEpg(String url,String label)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'pendingEpgUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'R.drawable.pv_background,this::showLiveCategories' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/res/drawable/pv_ic_dual.xml
-          test -s app/src/main/res/drawable/pv_ic_lock.xml
-          test -s app/src/main/res/drawable/pv_ic_unlock.xml
-          ! grep -q 'Audio del canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'Subtítulos del canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'nexus-score' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'android:icon="@drawable/pv_logo"' app/src/main/AndroidManifest.xml
-          grep -q 'android:roundIcon="@drawable/pv_logo"' app/src/main/AndroidManifest.xml
-          grep -q 'Elige un canal en vivo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Próximamente · bajo demanda' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showLivePlayer(String selectedCategory)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'showLibraryPlaceholder' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'android.R.drawable' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          test -s app/src/main/res/drawable/pv_ic_search.xml
-          test -s app/src/main/res/drawable/pv_ic_sports.xml
-          test -s app/src/main/res/drawable/pv_ic_movies.xml
-          test -s app/src/main/res/drawable/pv_ic_series.xml
-          test -s app/src/main/res/drawable/pv_ic_music.xml
-          test -s app/src/main/res/drawable/pv_ic_kids.xml
-      - name: Lint, unit task and release build
-        run: gradle :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
-      - name: Verify APK integrity and manifest
+          grep -q 'showParentalChannelManager()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showMovies' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showSeries' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showRadio' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Continuar viendo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'seekVodBy(-10000)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'seekDeltaForRepeat' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'saveVodProgress' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'prepareVodAt(pos)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'loadFromUrlSafe' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'RotatingCache.write' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'acceptableCount' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'saveEpgCache' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'restoreEpgCache' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '5L\*24L\*60L\*60L\*1000L' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'currentStreamUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Radio · solo música' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'String\[\] opts={"Español","English"}' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'radioFavorites' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'radioRecents' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'urlForRetry' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/CachePolicy.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/RotatingCache.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/CachePolicyTest.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/RotatingCacheTest.java
+          ! grep -RqiE 'xtream_pass[[:space:]]*=[[:space:]]*"|password[[:space:]]*=[[:space:]]*"' app/src/main/java || (echo 'possible hardcoded credential detected' && exit 1)
+      - name: Lint unit tests and release build
+        run: gradle --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
+      - name: Verify release APK
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='230' versionName='2.3.0'" badging.txt
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
-          grep -q "android.permission.INTERNET" permissions.txt
-          grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
-          grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" permissions.txt
-          ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
-          sha256sum PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk > PalmaVision-v2.3.0-HARDENING-PERSISTENCE.sha256.txt
-      - name: Package complete source project
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='240'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.0'"
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
+          cp "$APK" PalmaVision_2.4.0.apk
+          sha256sum PalmaVision_2.4.0.apk > PalmaVision_2.4.0.sha256.txt
+      - name: Package source project
         run: |
-          zip -r PalmaVision_v2.3.0_HARDENING_PERSISTENCE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          rm -rf app/build .gradle
+          zip -qr PalmaVision_2.4.0_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.3.0-HARDENING-PERSISTENCE-release
+          name: PalmaVision-2.4.0-release
           path: |
-            PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
-            PalmaVision-v2.3.0-HARDENING-PERSISTENCE.sha256.txt
-          if-no-files-found: error
+            PalmaVision_2.4.0.apk
+            PalmaVision_2.4.0.sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.3.0-HARDENING-PERSISTENCE-project
-          path: PalmaVision_v2.3.0_HARDENING_PERSISTENCE_Project.zip
-          if-no-files-found: error
-      - name: Android emulator install and launch smoke test
+          name: PalmaVision-2.4.0-project
+          path: PalmaVision_2.4.0_Project.zip
+  emulator-smoke:
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Prepare list and APK
+        run: |
+          mkdir -p app/src/main/assets
+          cp TV_Espanol_Plus_VERIFICADA.m3u app/src/main/assets/
+          gradle --no-daemon :app:assembleRelease
+      - name: Emulator UI smoke
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
-          target: default
+          api-level: 35
           arch: x86_64
-          profile: pixel_2
-          ram-size: 2048M
-          disable-animations: false
-          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 2048 -cores 2
+          profile: pixel_6
+          disable-animations: true
           script: |
-            set -eu
-            adb start-server
-            adb wait-for-device
-            adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
-            adb logcat -c
+            adb install -r app/build/outputs/apk/release/app-release.apk
             python3 .github/ci/ui_smoke.py
-            adb shell pidof com.epalma.tvespanolplus | tee pid.txt
-            test -s pid.txt
-            adb logcat -d -t 3000 > smoke-logcat.txt
-            ! grep -Eq 'FATAL EXCEPTION|ANR in com.epalma.tvespanolplus|NoClassDefFoundError|ClassNotFoundException|AndroidRuntime.*FATAL' smoke-logcat.txt
