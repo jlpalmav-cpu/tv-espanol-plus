@@ -146,8 +146,8 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='250'"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.5.0'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='251'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.5.1'"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           cp "$APK" PalmaVision_2.5.1.apk
           sha256sum PalmaVision_2.5.1.apk > PalmaVision_2.5.1.sha256.txt
