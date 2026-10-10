@@ -1,4 +1,4 @@
-﻿#EXTM3U x-tvg-url="https://dearbulut.github.io/iptv/epg/guide.xml.gz"
+#EXTM3U x-tvg-url="https://dearbulut.github.io/iptv/epg/guide.xml.gz"
 # TV Español+ | Build 2026-09-15 | Solo contenido con idioma español etiquetado y stream health=online
 # Cine/Series aquí son canales lineales/FAST. VOD real requiere API/Xtream aparte.
 
@@ -3537,3 +3537,79 @@ https://vcp.myplaytv.com/promar/promar/playlist.m3u8
 https://183.bozztv.com/giatv/giatv-AbejalesTV/AbejalesTV/playlist.m3u8
 #EXTINF:-1 tvg-id="TAMTV.ve" tvg-name="TAM TV" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/5/56/Logo_TAM.png" tvg-country="VE" tvg-language="spa" group-title="20 🇻🇪 Venezuela" nexus-score="61.2" x-checked-at="2026-09-15T18:34:55.428Z",TAM TV
 https://rtmp.tamtv.com.ve/tmp_hls/stream/index.m3u8
+
+# --- PalmaVision v2.4.3 · ampliación gratuita curada 2026-10-10 ---
+#EXTINF:-1 tvg-id="Canal51.hn" tvg-name="Canal 51" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="20 🇭🇳 Honduras" x-source="iptv-org",Canal 51
+https://live.cn51hn.com/live/cn51.m3u8
+#EXTINF:-1 tvg-id="MasNoticiasTelevision.hn" tvg-name="Más Noticias Televisión" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="05 📰 Noticias" x-source="iptv-org",Más Noticias Televisión
+https://www.amixtv.com:8081/mntvh/index.m3u8
+#EXTINF:-1 tvg-id="MayaTV.hn" tvg-name="Maya TV" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="05 📰 Noticias" x-source="iptv-org",Maya TV
+https://media.streambrothers.com:19360/8356/8356.m3u8
+#EXTINF:-1 tvg-id="QhuboTV.hn" tvg-name="Q'hubo TV" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="09 🎭 Entretenimiento" x-source="iptv-org",Q'hubo TV
+https://5e85d90130e77.streamlock.net/6024/6024/playlist.m3u8
+#EXTINF:-1 tvg-id="UNAHUTV.hn" tvg-name="UNAH UTV" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="08 🎓 Cultura y documentales" x-source="iptv-org",UNAH UTV
+https://live-utv.unah.edu.hn/web/salida.m3u8
+#EXTINF:-1 tvg-id="TelevisionOlanchana.hn" tvg-name="Televisión Olanchana" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="20 🇭🇳 Honduras" x-source="iptv-org",Televisión Olanchana
+https://viewhn.com/canal30/live/playlist.m3u8
+#EXTINF:-1 tvg-id="TelevisionComayaguaCanal40.hn" tvg-name="Televisión Comayagua Canal 40" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="20 🇭🇳 Honduras" x-source="iptv-org",Televisión Comayagua Canal 40
+https://mediacp.us:8081/8034/index.m3u8
+#EXTINF:-1 tvg-id="VTV.hn" tvg-name="VTV Honduras" tvg-logo="" tvg-country="HN" tvg-language="spa" group-title="09 🎭 Entretenimiento" x-source="iptv-org",VTV Honduras
+https://d3q93l5bumjyoq.cloudfront.net/index.m3u8
+#EXTINF:-1 tvg-id="Aunar.ar" tvg-name="Aunar" tvg-logo="http://tvabierta.weebly.com/uploads/5/1/3/4/51344345/aunar.png" tvg-country="AR" tvg-language="spa" group-title="20 🇦🇷 Argentina" x-source="Free-TV",Aunar
+https://5fb24b460df87.streamlock.net/live-cont.ar/mirador/playlist.m3u8
+#EXTINF:-1 tvg-id="CineAr.ar" tvg-name="Cine.AR" tvg-logo="https://i.imgur.com/RPLyrIC.png" tvg-country="AR" tvg-language="spa" group-title="02 🎬 Cine en vivo" x-source="Free-TV",Cine.AR
+https://5fb24b460df87.streamlock.net/live-cont.ar/cinear/playlist.m3u8
+#EXTINF:-1 tvg-id="TECTV.ar" tvg-name="Tec TV" tvg-logo="https://i.imgur.com/EGCq1wc.png" tvg-country="AR" tvg-language="spa" group-title="08 🎓 Cultura y documentales" x-source="Free-TV",Tec TV
+https://tv.initium.net.ar:3939/live/tectvmainlive.m3u8
+#EXTINF:-1 tvg-id="DeporTV.ar" tvg-name="DeporTV" tvg-logo="https://i.imgur.com/iyYLNRt.png" tvg-country="AR" tvg-language="spa" group-title="01 ⚽ Deportes" x-source="Free-TV",DeporTV
+https://5fb24b460df87.streamlock.net/live-cont.ar/deportv/playlist.m3u8
+#EXTINF:-1 tvg-id="MasPerfil.ar" tvg-name="+Perfil" tvg-logo="https://i.imgur.com/3wZdPwN.png" tvg-country="AR" tvg-language="spa" group-title="20 🇦🇷 Argentina" x-source="Free-TV",+Perfil
+https://unlimited1-us.dps.live/perfiltv/perfiltv.smil/perfiltv/livestream2/chunks.m3u8
+#EXTINF:-1 tvg-id="24Horas.cl" tvg-name="24 Horas Chile" tvg-logo="https://i.imgur.com/0rF6Kub.png" tvg-country="CL" tvg-language="spa" group-title="05 📰 Noticias" x-source="Free-TV",24 Horas Chile
+https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8
+#EXTINF:-1 tvg-id="UChileTV.cl" tvg-name="UChile TV" tvg-logo="https://i.imgur.com/mF2W8Uh.png" tvg-country="CL" tvg-language="spa" group-title="08 🎓 Cultura y documentales" x-source="Free-TV",UChile TV
+https://unlimited1-us.dps.live/uchiletv/uchiletv.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="CHVNoticias.cl" tvg-name="Chilevisión Noticias" tvg-logo="https://i.imgur.com/Qh6d0A9.png" tvg-country="CL" tvg-language="spa" group-title="05 📰 Noticias" x-source="Free-TV",Chilevisión Noticias
+https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chvn/chvn.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="Canal2.cr" tvg-name="Canal 2 CDR" tvg-logo="https://i0.wp.com/directostv.teleame.com/wp-content/uploads/2016/06/Canal-2-Costa-Rica-en-vivo-Online.png" tvg-country="CR" tvg-language="spa" group-title="20 🇨🇷 Costa Rica" x-source="Free-TV",Canal 2 CDR
+https://d3bgcstab9qhdz.cloudfront.net/hls/canal2.m3u8
+#EXTINF:-1 tvg-id="CanalOnce.mx" tvg-name="Canal Once" tvg-logo="https://graph.facebook.com/CANALONCETV/picture?width=200&height=200" tvg-country="MX" tvg-language="spa" group-title="08 🎓 Cultura y documentales" x-source="Free-TV",Canal Once
+https://vivo.canaloncelive.tv/secureoncedos/oncedigital/playlist.m3u8
+#EXTINF:-1 tvg-id="Canal6Multimedios.mx" tvg-name="Canal 6 Multimedios" tvg-logo="https://graph.facebook.com/multimediostv/picture?width=200&height=200" tvg-country="MX" tvg-language="spa" group-title="20 🇲🇽 México" x-source="Free-TV",Canal 6 Multimedios
+https://mdstrm.com/live-stream-playlist/5d56ed29c92dd106ff01543b.m3u8
+#EXTINF:-1 tvg-id="QuieroTV.mx" tvg-name="Quiero TV" tvg-logo="https://graph.facebook.com/quierotvGDL/picture?width=200&height=200" tvg-country="MX" tvg-language="spa" group-title="20 🇲🇽 México" x-source="Free-TV",Quiero TV
+https://stream.ontvmx.com/ontv/ghxTYEQmKkB2UJyVuW/playlist.m3u8
+#EXTINF:-1 tvg-id="MexicoTravelTV.mx" tvg-name="México Travel TV" tvg-logo="https://graph.facebook.com/MexicoTravelChannelTV/picture?width=200&height=200" tvg-country="MX" tvg-language="spa" group-title="08 🎓 Cultura y documentales" x-source="Free-TV",México Travel TV
+https://5ca9af4645e15.streamlock.net/mexicotravel/videomexicotravel/playlist.m3u8
+#EXTINF:-1 tvg-id="AguacateTV.ve" tvg-name="Aguacate TV" tvg-logo="https://intervenhosting.net/imagenes/aguacatetv.jpg" tvg-country="VE" tvg-language="spa" group-title="20 🇻🇪 Venezuela" x-source="Free-TV",Aguacate TV
+https://streamtv.intervenhosting.net:3040/hybrid/play.m3u8
+#EXTINF:-1 tvg-id="Euronews.es" tvg-name="Euronews" tvg-logo="https://graph.facebook.com/es.euronews/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="05 📰 Noticias" x-source="TDTChannels",Euronews
+https://euronews-live-spa-es.fast.rakuten.tv/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-6571/bitok/eyJzdGlkIjoiMDA0YjY0NTMtYjY2MC00ZTZkLTlkNzEtMTk3YTM3ZDZhZWIxIiwibWt0IjoiZXMiLCJjaCI6NjU3MSwicHRmIjoxfQ==/26034/euronews-es.m3u8
+#EXTINF:-1 tvg-id="ElPais.es" tvg-name="El País" tvg-logo="https://graph.facebook.com/elpais/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="05 📰 Noticias" x-source="TDTChannels",El País
+https://d2epgk1fomaa1g.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-9n8y4tw0bk3an/live/fast-channel-el-pais/fast-channel-el-pais.m3u8
+#EXTINF:-1 tvg-id="Vinx.es" tvg-name="Vinx TV" tvg-logo="https://graph.facebook.com/VinxTV/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="01 ⚽ Deportes" x-source="TDTChannels",Vinx TV
+https://live.enfoque.media:5443/live/streams/vinxtv.m3u8
+#EXTINF:-1 tvg-id="101Malaga.es" tvg-name="101TV Málaga" tvg-logo="https://graph.facebook.com/101tvmalaga/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",101TV Málaga
+https://liveingesta318.cdnmedia.tv/101televisionlive/smil:malagaott.smil/playlist.m3u8?DVR
+#EXTINF:-1 tvg-id="PTV_Malaga.es" tvg-name="PTV Málaga" tvg-logo="https://graph.facebook.com/PTVMalaga/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",PTV Málaga
+https://streamer.zapitv.com/PTV-malaga/index.m3u8
+#EXTINF:-1 tvg-id="Teleonuba.es" tvg-name="Teleonuba" tvg-logo="https://graph.facebook.com/Teleonuba/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",Teleonuba
+https://5f71743aa95e4.streamlock.net:1936/Teleonuba/endirecto/playlist.m3u8
+#EXTINF:-1 tvg-id="CanalCosta.es" tvg-name="CanalCosta" tvg-logo="https://graph.facebook.com/canalcosta/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",CanalCosta
+https://5f71743aa95e4.streamlock.net:1936/CanalcostaTV/endirecto/playlist.m3u8
+#EXTINF:-1 tvg-id="Condavision.es" tvg-name="Condavisión" tvg-logo="https://graph.facebook.com/condavision/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",Condavisión
+https://5f71743aa95e4.streamlock.net:1936/Condavision/endirecto/playlist.m3u8
+#EXTINF:-1 tvg-id="101Antequera.es" tvg-name="101TV Antequera" tvg-logo="https://graph.facebook.com/101tvAntequera/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",101TV Antequera
+https://liveingesta318.cdnmedia.tv/101weblive/smil:antequera.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="PTV_Linares.es" tvg-name="PTV Linares" tvg-logo="https://graph.facebook.com/tvlinares/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",PTV Linares
+https://streamer.zapitv.com/ptv-linarez/index.m3u8
+#EXTINF:-1 tvg-id="PTV_Sevilla.es" tvg-name="PTV Sevilla" tvg-logo="https://graph.facebook.com/SevillaPTV/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",PTV Sevilla
+https://streamer.zapitv.com/PTV_sevilla/index.m3u8
+#EXTINF:-1 tvg-id="9LaLoma.es" tvg-name="9 la Loma TV" tvg-logo="https://graph.facebook.com/9laloma/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",9 la Loma TV
+https://9laloma.tv/live.m3u8
+#EXTINF:-1 tvg-id="PTV_Granada.es" tvg-name="PTV Granada" tvg-logo="https://graph.facebook.com/PTVGranada/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",PTV Granada
+https://streamer.zapitv.com/PTV-granada/index.m3u8
+#EXTINF:-1 tvg-id="PopularTV_S.es" tvg-name="Popular TV Cantabria" tvg-logo="https://graph.facebook.com/populartvcantabria/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",Popular TV Cantabria
+https://limited12.todostreaming.es/live/ptvcantabria-livestream.m3u8
+#EXTINF:-1 tvg-id="Imas.es" tvg-name="Imás TV" tvg-logo="https://graph.facebook.com/television.imas/picture?width=200&height=200" tvg-country="ES" tvg-language="spa" group-title="20 🇪🇸 España" x-source="TDTChannels",Imás TV
+https://secure3.todostreaming.es/live/imastv-livestream.m3u8
