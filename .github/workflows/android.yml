@@ -1,7 +1,7 @@
-name: PalmaVision v2.2.2 Auto Connect CI
+name: PalmaVision v2.2.3 Disconnect On Exit CI
 on:
   push:
-    branches: [ build-palmavision-v222-auto-connect ]
+    branches: [ build-palmavision-v223-disconnect-on-exit ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,13 +21,13 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionName '2.2.2'" app/build.gradle
+          grep -q "versionName '2.2.3'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.2.2 Auto Connect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.2.3 Auto Disconnect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -122,6 +122,10 @@ jobs:
           grep -q 'Dispositivos encontrados' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Conexión automática' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'startAutoConnect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'disconnectRemoteAndExit' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'endCurrentSession(true)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'dlnaSoap(target.controlUrl,target.serviceType,"Stop"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'También se detendrá la reproducción' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'tryAutoMethod' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'tryCastAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'tryDlnaAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -185,28 +189,28 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='222' versionName='2.2.2'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='223' versionName='2.2.3'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.2.2-AUTO-CONNECT.apk
-          sha256sum PalmaVision-v2.2.2-AUTO-CONNECT.apk > PalmaVision-v2.2.2-AUTO-CONNECT.sha256.txt
+          cp "$APK" PalmaVision-v2.2.3-AUTO-DISCONNECT.apk
+          sha256sum PalmaVision-v2.2.3-AUTO-DISCONNECT.apk > PalmaVision-v2.2.3-AUTO-DISCONNECT.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.2.2_AUTO_CONNECT_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.2.3_AUTO_DISCONNECT_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.2-AUTO-CONNECT-release
+          name: PalmaVision-v2.2.3-AUTO-DISCONNECT-release
           path: |
-            PalmaVision-v2.2.2-AUTO-CONNECT.apk
-            PalmaVision-v2.2.2-AUTO-CONNECT.sha256.txt
+            PalmaVision-v2.2.3-AUTO-DISCONNECT.apk
+            PalmaVision-v2.2.3-AUTO-DISCONNECT.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.2-AUTO-CONNECT-project
-          path: PalmaVision_v2.2.2_AUTO_CONNECT_Project.zip
+          name: PalmaVision-v2.2.3-AUTO-DISCONNECT-project
+          path: PalmaVision_v2.2.3_AUTO_DISCONNECT_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -223,7 +227,7 @@ jobs:
             adb start-server
             adb wait-for-device
             adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r PalmaVision-v2.2.2-AUTO-CONNECT.apk
+            adb install -r PalmaVision-v2.2.3-AUTO-DISCONNECT.apk
             adb logcat -c
             python3 .github/ci/ui_smoke.py
             adb shell pidof com.epalma.tvespanolplus | tee pid.txt
