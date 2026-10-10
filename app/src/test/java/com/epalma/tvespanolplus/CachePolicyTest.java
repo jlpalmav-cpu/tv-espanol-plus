@@ -19,6 +19,15 @@ public class CachePolicyTest {
     assertEquals(30000L,CachePolicy.seekDeltaForRepeat(4));
     assertEquals(60000L,CachePolicy.seekDeltaForRepeat(10));
   }
+  @Test public void verificationFreshnessUsesLastSuccessOrFirstSeen(){
+    long day=24L*60L*60L*1000L, now=100L*day;
+    assertTrue(CachePolicy.isVerificationFresh(95L*day,0,now,7));
+    assertFalse(CachePolicy.isVerificationFresh(90L*day,0,now,7));
+    assertTrue(CachePolicy.isVerificationFresh(0,98L*day,now,3));
+    assertFalse(CachePolicy.isVerificationFresh(0,95L*day,now,3));
+    assertTrue(CachePolicy.isVerificationFresh(0,0,now,30));
+  }
+
   @Test public void radioClassificationExcludesTalkAndGroupsMusic(){
     assertEquals("Salsa",CachePolicy.radioGenre("Spanish","salsa,latin,music","Radio Salsa"));
     assertEquals("Classic Rock",CachePolicy.radioGenre("English","classic rock,music","Rock FM"));
