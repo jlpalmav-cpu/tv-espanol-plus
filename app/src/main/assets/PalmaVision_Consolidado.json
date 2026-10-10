@@ -1,6 +1,6 @@
 {
   "schema": "palmaVision.sources.v1",
-  "version": "2026.10.10-r4",
+  "version": "2026.10.10-r5",
   "region": "HN",
   "language_policy": {
     "accept_when": [
@@ -40,52 +40,20 @@
   },
   "providers": [
     {
-      "id": "vix",
-      "name": "ViX Gratis",
+      "id": "arte",
+      "name": "ARTE en español",
       "types": [
         "movies",
         "series"
       ],
-      "region_status": "supported",
-      "language_status": "spanish_native",
+      "region_status": "global_partial",
+      "language_status": "spanish_version_or_subtitles",
       "integration": "official_external",
-      "movies_url": "https://vix.com/",
-      "series_url": "https://vix.com/",
-      "note": "Plan gratis con anuncios.",
+      "movies_url": "https://www.arte.tv/es/",
+      "series_url": "https://www.arte.tv/es/",
+      "note": "Algunos títulos tienen geobloqueo.",
       "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://vix.com"
-    },
-    {
-      "id": "pluto",
-      "name": "Pluto TV On Demand",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "supported_or_regional",
-      "language_status": "filter_per_title",
-      "integration": "official_external",
-      "movies_url": "https://pluto.tv/on-demand",
-      "series_url": "https://pluto.tv/on-demand",
-      "note": "VOD gratuito; disponibilidad por región.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://pluto.tv"
-    },
-    {
-      "id": "plex",
-      "name": "Plex Free Movies & Shows",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "global_with_exceptions",
-      "language_status": "filter_per_title",
-      "integration": "official_external",
-      "movies_url": "https://watch.plex.tv/on-demand",
-      "series_url": "https://watch.plex.tv/on-demand",
-      "note": "Mostrar solo títulos con audio ES o subtítulos ES.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://watch.plex.tv"
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://arte.tv"
     },
     {
       "id": "canela",
@@ -104,116 +72,20 @@
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://canela.tv"
     },
     {
-      "id": "runtime",
-      "name": "Runtime",
+      "id": "cinear",
+      "name": "CINE.AR Play",
       "types": [
         "movies",
         "series"
       ],
       "region_status": "verify_honduras",
-      "language_status": "filter_per_title",
+      "language_status": "mostly_spanish",
       "integration": "official_external",
-      "movies_url": "https://www.runtime.tv/",
-      "series_url": "https://www.runtime.tv/",
-      "note": "Gratis con anuncios; priorizar contenido español o subtitulado ES.",
+      "movies_url": "https://www.cine.ar/",
+      "series_url": "https://www.cine.ar/",
+      "note": "Validar disponibilidad internacional por título.",
       "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://runtime.tv"
-    },
-    {
-      "id": "freetv",
-      "name": "FreeTV",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "verify_honduras",
-      "language_status": "filter_per_title",
-      "integration": "official_external",
-      "movies_url": "https://www.freetv.com/",
-      "series_url": "https://www.freetv.com/",
-      "note": "AVOD gratuito; validar título y región.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://freetv.com"
-    },
-    {
-      "id": "filmzie",
-      "name": "Filmzie",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "verify_honduras",
-      "language_status": "spanish_subtitles_available_on_selected_titles",
-      "integration": "official_external",
-      "movies_url": "https://filmzie.com/",
-      "series_url": "https://filmzie.com/",
-      "note": "Cine independiente; filtrar por subtítulos o audio ES.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://filmzie.com"
-    },
-    {
-      "id": "viki",
-      "name": "Rakuten Viki",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "supported",
-      "language_status": "spanish_subtitles_on_selected_titles",
-      "integration": "official_external",
-      "movies_url": "https://www.viki.com/",
-      "series_url": "https://www.viki.com/",
-      "note": "Parte del catálogo es gratis con anuncios.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://viki.com"
-    },
-    {
-      "id": "iqiyi",
-      "name": "iQIYI International",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "international",
-      "language_status": "spanish_subtitles_or_dubs_on_selected_titles",
-      "integration": "official_external",
-      "movies_url": "https://www.iq.com/?lang=es_mx",
-      "series_url": "https://www.iq.com/?lang=es_mx",
-      "note": "Incluir solo títulos gratis y con ES.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://iq.com"
-    },
-    {
-      "id": "tv5mondeplus",
-      "name": "TV5MONDEplus",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "international",
-      "language_status": "spanish_subtitles_on_selected_titles",
-      "integration": "official_external",
-      "movies_url": "https://www.tv5mondeplus.com/es",
-      "series_url": "https://www.tv5mondeplus.com/es",
-      "note": "Catálogo francófono gratuito; filtrar subtítulos ES.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://tv5mondeplus.com"
-    },
-    {
-      "id": "arte",
-      "name": "ARTE en español",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "global_partial",
-      "language_status": "spanish_version_or_subtitles",
-      "integration": "official_external",
-      "movies_url": "https://www.arte.tv/es/",
-      "series_url": "https://www.arte.tv/es/",
-      "note": "Algunos títulos tienen geobloqueo.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://arte.tv"
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://cine.ar"
     },
     {
       "id": "fawesome",
@@ -232,18 +104,52 @@
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://fawesome.tv"
     },
     {
-      "id": "retinalatina",
-      "name": "Retina Latina",
+      "id": "filmzie",
+      "name": "Filmzie",
       "types": [
-        "movies"
+        "movies",
+        "series"
       ],
-      "region_status": "latam_caribbean",
-      "language_status": "mostly_spanish",
+      "region_status": "verify_honduras",
+      "language_status": "spanish_subtitles_available_on_selected_titles",
       "integration": "official_external",
-      "movies_url": "https://www.retinalatina.org/catalogo/",
-      "note": "Cine latinoamericano de acceso libre.",
+      "movies_url": "https://filmzie.com/",
+      "series_url": "https://filmzie.com/",
+      "note": "Cine independiente; filtrar por subtítulos o audio ES.",
       "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://retinalatina.org"
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://filmzie.com"
+    },
+    {
+      "id": "freetv",
+      "name": "FreeTV",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "verify_honduras",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://www.freetv.com/",
+      "series_url": "https://www.freetv.com/",
+      "note": "AVOD gratuito; validar título y región.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://freetv.com"
+    },
+    {
+      "id": "iqiyi",
+      "name": "iQIYI International",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international",
+      "language_status": "spanish_subtitles_or_dubs_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.iq.com/?lang=es_mx",
+      "series_url": "https://www.iq.com/?lang=es_mx",
+      "note": "Incluir solo títulos gratis y con ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://iq.com"
     },
     {
       "id": "ondamedia",
@@ -260,20 +166,130 @@
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://ondamedia.cl"
     },
     {
-      "id": "cinear",
-      "name": "CINE.AR Play",
+      "id": "plex",
+      "name": "Plex Free Movies & Shows",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "global_with_exceptions",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://watch.plex.tv/on-demand",
+      "series_url": "https://watch.plex.tv/on-demand",
+      "note": "Mostrar solo títulos con audio ES o subtítulos ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://watch.plex.tv"
+    },
+    {
+      "id": "pluto",
+      "name": "Pluto TV On Demand",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported_or_regional",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://pluto.tv/on-demand",
+      "series_url": "https://pluto.tv/on-demand",
+      "note": "VOD gratuito; disponibilidad por región.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://pluto.tv"
+    },
+    {
+      "id": "viki",
+      "name": "Rakuten Viki",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported",
+      "language_status": "spanish_subtitles_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.viki.com/",
+      "series_url": "https://www.viki.com/",
+      "note": "Parte del catálogo es gratis con anuncios.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://viki.com"
+    },
+    {
+      "id": "retinalatina",
+      "name": "Retina Latina",
+      "types": [
+        "movies"
+      ],
+      "region_status": "latam_caribbean",
+      "language_status": "mostly_spanish",
+      "integration": "official_external",
+      "movies_url": "https://www.retinalatina.org/catalogo/",
+      "note": "Cine latinoamericano de acceso libre.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://retinalatina.org"
+    },
+    {
+      "id": "rtveplay",
+      "name": "RTVE Play",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international_partial",
+      "language_status": "spanish_native_or_dubbed",
+      "integration": "official_external",
+      "movies_url": "https://www.rtve.es/play/cine/",
+      "series_url": "https://www.rtve.es/play/series/",
+      "note": "Gratis; puede requerir registro. Algunos títulos están restringidos fuera de España por derechos.",
+      "last_verified_at": "2026-10-10T08:58:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://www.rtve.es"
+    },
+    {
+      "id": "runtime",
+      "name": "Runtime",
       "types": [
         "movies",
         "series"
       ],
       "region_status": "verify_honduras",
-      "language_status": "mostly_spanish",
+      "language_status": "filter_per_title",
       "integration": "official_external",
-      "movies_url": "https://www.cine.ar/",
-      "series_url": "https://www.cine.ar/",
-      "note": "Validar disponibilidad internacional por título.",
+      "movies_url": "https://www.runtime.tv/",
+      "series_url": "https://www.runtime.tv/",
+      "note": "Gratis con anuncios; priorizar contenido español o subtitulado ES.",
       "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://cine.ar"
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://runtime.tv"
+    },
+    {
+      "id": "tv5mondeplus",
+      "name": "TV5MONDEplus",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international",
+      "language_status": "spanish_subtitles_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.tv5mondeplus.com/es",
+      "series_url": "https://www.tv5mondeplus.com/es",
+      "note": "Catálogo francófono gratuito; filtrar subtítulos ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://tv5mondeplus.com"
+    },
+    {
+      "id": "vix",
+      "name": "ViX Gratis",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported",
+      "language_status": "spanish_native",
+      "integration": "official_external",
+      "movies_url": "https://vix.com/",
+      "series_url": "https://vix.com/",
+      "note": "Plan gratis con anuncios.",
+      "last_verified_at": "2026-10-10T06:00:00Z",
+      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://vix.com"
     }
   ],
   "verification_policy": {
