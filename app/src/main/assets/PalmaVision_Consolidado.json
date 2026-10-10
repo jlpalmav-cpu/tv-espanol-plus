@@ -1,6 +1,6 @@
 {
   "schema": "palmaVision.sources.v1",
-  "version": "2026.10.10-r3",
+  "version": "2026.10.10-r4",
   "region": "HN",
   "language_policy": {
     "accept_when": [
@@ -258,22 +258,6 @@
       "note": "Usar solo colección habilitada fuera de Chile.",
       "last_verified_at": "2026-10-10T06:00:00Z",
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://ondamedia.cl"
-    },
-    {
-      "id": "rtvcplay",
-      "name": "RTVCPlay · Sin geobloqueo",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "global_subset",
-      "language_status": "spanish_native",
-      "integration": "official_external",
-      "movies_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
-      "series_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
-      "note": "Usar contenido expresamente sin geobloqueo.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://rtvcplay.co"
     },
     {
       "id": "cinear",
