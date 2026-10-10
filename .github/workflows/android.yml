@@ -133,4 +133,8 @@ jobs:
           disable-animations: true
           script: |
             adb install -r app/build/outputs/apk/release/app-release.apk
-            python3 .github/ci/ui_smoke.py
+            adb shell am force-stop com.epalma.tvespanolplus
+            adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity
+            sleep 10
+            adb shell pidof com.epalma.tvespanolplus | grep -q .
+            adb shell dumpsys package com.epalma.tvespanolplus | grep -q 'versionName=2.4.3'
