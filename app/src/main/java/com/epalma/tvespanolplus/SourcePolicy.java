@@ -32,12 +32,13 @@ public final class SourcePolicy {
     String n=norm(name),g=norm(group),u=(url==null?"":url).toLowerCase(Locale.ROOT);
     boolean audio=u.matches(".*\\.(mp3|aac|m4a|ogg|flac)(?:\\?.*)?$");
     if(audio||has(g,"radio","music","musica","música","audio")||has(n," radio ","fm ","am "))return MUSIC;
-    if(has(g,"series","serie","tv show","tv shows","temporada","episodio")||EPISODE.matcher(name==null?"":name).matches())return SERIES;
+    if(hasPath(u,"/series/","/series?","/episode/","/episodes/")||has(g,"series","serie","tv show","tv shows","temporada","episodio")||EPISODE.matcher(name==null?"":name).matches())return SERIES;
     boolean fileVod=u.matches(".*\\.(mp4|mkv|avi|mov|m4v|webm)(?:\\?.*)?$");
-    if(has(g,"movie","movies","pelicula","películas","peliculas","cine","cinema","vod","film")||fileVod)return MOVIE;
+    if(hasPath(u,"/movie/","/movies/","/vod/")||has(g,"movie","movies","pelicula","películas","peliculas","cine","cinema","vod","film")||fileVod)return MOVIE;
     return LIVE;
   }
 
   private static String norm(String x){return (" "+(x==null?"":x).toLowerCase(Locale.ROOT).replace('í','i').replace('ú','u')+" ").replaceAll("\\s+"," ");}
   private static boolean has(String x,String... terms){for(String t:terms)if(x.contains(t))return true;return false;}
+  private static boolean hasPath(String x,String... terms){for(String t:terms)if(x.contains(t))return true;return false;}
 }
