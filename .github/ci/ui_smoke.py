@@ -15,16 +15,9 @@ def adb(*args, check=True):
     return sh("adb",*args,check=check)
 
 def dump():
-    # Android 35 may reject UIAutomator dumps written to shared/emulator storage.
-    # Read the hierarchy directly from stdout instead.
-    out=adb("exec-out","uiautomator","dump","/dev/tty")
-    start=out.find("<?xml")
-    end=out.rfind("</hierarchy>")
-    if start<0 or end<0:
-        print(out)
-        raise RuntimeError("uiautomator did not return an XML hierarchy")
-    xml=out[start:end+len("</hierarchy>")]
-    return ET.fromstring(xml)
+    adb("shell","uiautomator","dump","/sdcard/pv-ui.xml")
+    adb("pull","/sdcard/pv-ui.xml","pv-ui.xml")
+    return ET.parse("pv-ui.xml").getroot()
 
 def text_nodes(needle):
     root=dump()
