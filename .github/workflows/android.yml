@@ -1,4 +1,4 @@
-name: PalmaVision v2.4.0 VOD Radio Recovery CI
+name: PalmaVision v2.4.1 VOD Radio Recovery CI
 on:
   workflow_dispatch:
   push:
@@ -24,8 +24,8 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionCode 240" app/build.gradle
-          grep -q "versionName '2.4.0'" app/build.gradle
+          grep -q "versionCode 241" app/build.gradle
+          grep -q "versionName '2.4.1'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -57,6 +57,15 @@ jobs:
           test -s app/src/main/java/com/epalma/tvespanolplus/RotatingCache.java
           test -s app/src/test/java/com/epalma/tvespanolplus/CachePolicyTest.java
           test -s app/src/test/java/com/epalma/tvespanolplus/RotatingCacheTest.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/GuideSearch.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/GuideSearchTest.java
+          grep -q 'Buscar en programación · ej. FC Barcelona' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'GuideSearch.matches' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Audio y subtítulos disponibles' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Desactivados' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'choosePlaybackSubtitleSize' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'onTracksChanged(Tracks tracks)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'x.put("d",p.description)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'securePutXtreamPassword' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'secureGetXtreamPassword' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
       - name: Lint unit tests and release build
@@ -66,25 +75,25 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='240'"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.0'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='241'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.1'"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.4.0.apk
-          sha256sum PalmaVision_2.4.0.apk > PalmaVision_2.4.0.sha256.txt
+          cp "$APK" PalmaVision_2.4.1.apk
+          sha256sum PalmaVision_2.4.1.apk > PalmaVision_2.4.1.sha256.txt
       - name: Package source project
         run: |
           rm -rf app/build .gradle
-          zip -qr PalmaVision_2.4.0_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
+          zip -qr PalmaVision_2.4.1_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.0-release
+          name: PalmaVision-2.4.1-release
           path: |
-            PalmaVision_2.4.0.apk
-            PalmaVision_2.4.0.sha256.txt
+            PalmaVision_2.4.1.apk
+            PalmaVision_2.4.1.sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.0-project
-          path: PalmaVision_2.4.0_Project.zip
+          name: PalmaVision-2.4.1-project
+          path: PalmaVision_2.4.1_Project.zip
   emulator-smoke:
     needs: build-test
     runs-on: ubuntu-latest
