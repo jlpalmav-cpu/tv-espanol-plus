@@ -20,12 +20,16 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.text.method.PasswordTransformationMethod;
 import android.view.*;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.media3.common.*;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.datasource.DefaultDataSource;
+import androidx.media3.datasource.DefaultHttpDataSource;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.mediarouter.app.MediaRouteButton;
@@ -66,12 +70,16 @@ public class MainActivity extends AppCompatActivity {
   static final int PV_SURFACE=Color.argb(246,5,24,43), PV_SURFACE_2=Color.argb(242,8,42,68), PV_BUTTON=Color.argb(242,8,42,68), PV_BUTTON_FOCUS=Color.argb(248,10,82,132), PV_PRIMARY=Color.rgb(0,110,253), PV_DANGER=Color.rgb(234,67,53), PV_ERROR=Color.rgb(234,67,53);
   static final int HEALTH_UNKNOWN=0, HEALTH_OK=1, HEALTH_WARN=2, HEALTH_BAD=3, HEALTH_VERIFIED=4;
   final ExecutorService io=Executors.newSingleThreadExecutor();
-  final ExecutorService imageIo=Executors.newFixedThreadPool(3), epgIo=Executors.newSingleThreadExecutor(), tvIo=Executors.newSingleThreadExecutor(), catalogIo=Executors.newFixedThreadPool(2), radioIo=Executors.newSingleThreadExecutor();
+  final ExecutorService imageIo=Executors.newFixedThreadPool(3), epgIo=Executors.newSingleThreadExecutor(), tvIo=Executors.newSingleThreadExecutor(), catalogIo=Executors.newFixedThreadPool(2), radioIo=Executors.newSingleThreadExecutor(), guideIo=Executors.newSingleThreadExecutor();
   final List<Channel> all=new ArrayList<>(), shown=new ArrayList<>();
   final Map<String,List<Channel>> categoryIndex=new HashMap<>();
   final TreeMap<String,List<Channel>> countryIndex=new TreeMap<>();
   final Map<String,List<String>> alternateStreams=new HashMap<>();
-  Runnable searchFilterTask;
+  Runnable searchFilterTask, radioSearchTask, radioWatchdog;
+  long guideSearchGeneration=0L, radioAttemptToken=0L, radioCatalogLoadedAt=0L;
+  int guideDayFilter=0;
+  boolean radioCatalogLoading=false;
+  String radioCatalogLanguage="";
   String activeSourceLabel="Lista principal", activeEpgLabel="Sin EPG", lastEpgUrl="", detectedPlaylistEpgUrl="", epgLastError="", pendingEpgUrl="", pendingEpgLabel="";
   String preferredAudioLang="auto", preferredSubtitleLang="auto"; int preferredSubtitleSize=1;
   final ConcurrentHashMap<String,Program> currentPrograms=new ConcurrentHashMap<>();
@@ -488,10 +496,124 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
     });
   }
 
-  ArrayList<GuideHit> guideSearchHits(String query){ArrayList<GuideHit> out=new ArrayList<>();String q=GuideSearch.normalize(query);if(q.isEmpty())return out;long now=System.currentTimeMillis();for(Channel ch:all){List<Program> ps=programGuide.get(ch.id);if(ps==null)continue;for(Program pr:ps)if(GuideSearch.matches(q,pr.title,pr.description,ch.name)){out.add(new GuideHit(ch,pr));if(out.size()>=250)break;}if(out.size()>=250)break;}Collections.sort(out,(x,y)->{boolean xl=now>=x.program.start&&now<x.program.stop,yl=now>=y.program.start&&now<y.program.stop;if(xl!=yl)return xl?-1:1;return Long.compare(x.program.start,y.program.start);});return out;}
-  View guideHitRow(GuideHit hit){long now=System.currentTimeMillis();boolean live=now>=hit.program.start&&now<hit.program.stop;LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setBackground(rounded(live?Color.argb(245,0,92,150):PV_SURFACE_2,12));TextView t=tv(hit.program.title,14,Color.WHITE);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setSingleLine(true);t.setEllipsize(android.text.TextUtils.TruncateAt.END);String when=new SimpleDateFormat("EEE dd MMM · HH:mm",Locale.getDefault()).format(new Date(hit.program.start));TextView m=tv((live?"AHORA · ":"")+when+" · "+hit.channel.name,11,live?CYAN:MUTED);m.setSingleLine(true);m.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(t,new LinearLayout.LayoutParams(-1,dp(27)));row.addView(m,new LinearLayout.LayoutParams(-1,dp(23)));return row;}
-  void openGuideHit(GuideHit hit){long now=System.currentTimeMillis();boolean live=now>=hit.program.start&&now<hit.program.stop;String msg=hit.program.title+"\n"+new SimpleDateFormat("EEE dd MMM · HH:mm",Locale.getDefault()).format(new Date(hit.program.start))+"–"+hhmm(hit.program.stop)+"\n"+hit.channel.name+(hit.program.description.isEmpty()?"":"\n\n"+hit.program.description);AlertDialog.Builder b=new AlertDialog.Builder(this).setTitle(live?"En emisión":"Programa encontrado").setMessage(msg).setNegativeButton("Cerrar",null).setNeutralButton("Ver programación",(x,w)->showChannelSchedule(hit.channel));if(live)b.setPositiveButton("Ver ahora",(x,w)->{showLivePlayer(category);play(hit.channel);});AlertDialog d=b.create();styleDialog(d);}
-  void showGuide(){if(programGuide.isEmpty()){if(epgLoading){pvMessage("Programación","La guía EPG se está descargando y procesando.\n\nPuedes seguir usando PalmaVision y volver a Programación en unos momentos.");return;}if(all.isEmpty()){pvMessage("Programación","La lista de canales todavía se está cargando.");return;}String retryUrl=!lastEpgUrl.isEmpty()?lastEpgUrl:detectedPlaylistEpgUrl;if(!retryUrl.isEmpty()){AlertDialog d=new AlertDialog.Builder(this).setTitle("Programación").setMessage(epgLastError.isEmpty()?"La guía todavía no tiene datos disponibles.":"No se pudo cargar la guía.\n\n"+epgLastError+"\n\nURL: "+redactSecrets(retryUrl)).setNegativeButton("Cerrar",null).setPositiveButton("Reintentar",(x,w)->{loadXmltv(retryUrl,"EPG de la lista");toast("Recargando guía EPG");}).setNeutralButton("Configurar",(x,w)->showLists()).create();styleDialog(d);return;}pvMessage("Programación","Esta lista no incluye una URL EPG/XMLTV.\n\nPuedes agregarla en Configuración → Fuentes de TV → Guía EPG / XMLTV.");return;}setPage("guide","Programación");LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(10),dp(8),dp(10),dp(10));page.setBackground(outlinePanel());contentFrame.addView(page,new FrameLayout.LayoutParams(-1,-1));TextView h=tv("Programación",20,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);page.addView(h,new LinearLayout.LayoutParams(-1,dp(38)));TextView s=tv(displayCategory(category)+" · "+activeEpgLabel,12,CYAN);page.addView(s,new LinearLayout.LayoutParams(-1,dp(30)));EditText q=sourceField("Buscar en programación · ej. FC Barcelona",false);page.addView(q,new LinearLayout.LayoutParams(-1,dp(48)));Button refreshGuide=iconBtn("Actualizar guía",R.drawable.pv_ic_refresh);LinearLayout.LayoutParams rgp=new LinearLayout.LayoutParams(-1,dp(48));rgp.setMargins(0,dp(3),0,dp(6));page.addView(refreshGuide,rgp);refreshGuide.setOnClickListener(v->{String u=!lastEpgUrl.isEmpty()?lastEpgUrl:detectedPlaylistEpgUrl;if(u.isEmpty()){toast("No hay una URL EPG configurada");return;}loadXmltv(u,"EPG actualizada");toast("Actualizando guía EPG…");});List<Channel> source=baseForCategory(category);ArrayList<Channel> data=new ArrayList<>();for(Channel ch:source)if(programGuide.containsKey(ch.id))data.add(ch);if(current!=null&&programGuide.containsKey(current.id)&&!data.contains(current))data.add(0,current);ArrayList<GuideHit> hits=new ArrayList<>();final boolean[] searchMode={false};ListView lv=new ListView(this);BaseAdapter a=new BaseAdapter(){public int getCount(){return searchMode[0]?hits.size():data.size();}public Object getItem(int pos){return searchMode[0]?hits.get(pos):data.get(pos);}public long getItemId(int pos){return pos;}public View getView(int pos,View old,ViewGroup parent){return searchMode[0]?guideHitRow(hits.get(pos)):channelRow(data.get(pos),current!=null&&current.id.equals(data.get(pos).id),old);}};lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));page.addView(lv,new LinearLayout.LayoutParams(-1,0,1));lv.setOnItemClickListener((parent,v,pos,id)->{if(searchMode[0])openGuideHit(hits.get(pos));else showChannelSchedule(data.get(pos));});q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence x,int a1,int b1,int c1){}public void onTextChanged(CharSequence x,int a1,int b1,int c1){String query=x.toString().trim();searchMode[0]=!query.isEmpty();hits.clear();if(searchMode[0])hits.addAll(guideSearchHits(query));s.setText(searchMode[0]?(hits.size()+" resultados en toda la guía"):displayCategory(category)+" · "+activeEpgLabel);a.notifyDataSetChanged();}public void afterTextChanged(android.text.Editable e){}});if(data.isEmpty()){TextView e=tv("La guía cargada no coincide con los canales de esta categoría.",14,MUTED);page.addView(e,new LinearLayout.LayoutParams(-1,dp(60)));}}
+  String guideFilterLabel(int filter){if(filter==1)return "Hoy";if(filter==2)return "Mañana";if(filter==3)return "Próximos 3 días";if(filter==7)return "Próximos 7 días";return "Todos";}
+  long[] guideBounds(int filter){
+    if(filter==0)return new long[]{Long.MIN_VALUE,Long.MAX_VALUE};
+    Calendar cal=Calendar.getInstance();cal.set(Calendar.HOUR_OF_DAY,0);cal.set(Calendar.MINUTE,0);cal.set(Calendar.SECOND,0);cal.set(Calendar.MILLISECOND,0);
+    if(filter==2)cal.add(Calendar.DAY_OF_MONTH,1);
+    long from=cal.getTimeInMillis();Calendar end=(Calendar)cal.clone();end.add(Calendar.DAY_OF_MONTH,filter==2?1:filter);long to=end.getTimeInMillis();
+    return new long[]{from,to};
+  }
+  ArrayList<GuideHit> guideSearchHits(String query,int filter){
+    ArrayList<GuideHit> out=new ArrayList<>();String q=GuideSearch.normalize(query);if(q.isEmpty())return out;
+    long[] bounds=guideBounds(filter);long now=System.currentTimeMillis();
+    for(Channel ch:all){
+      List<Program> ps=programGuide.get(ch.id);if(ps==null)continue;
+      for(Program pr:ps){
+        if(pr.stop<bounds[0]||pr.start>=bounds[1])continue;
+        int relevance=GuideSearch.rank(q,pr.title,pr.description);if(relevance<0)continue;
+        out.add(new GuideHit(ch,pr,relevance));
+      }
+    }
+    Collections.sort(out,(x,y)->{
+      if(x.relevance!=y.relevance)return Integer.compare(y.relevance,x.relevance);
+      boolean xl=now>=x.program.start&&now<x.program.stop,yl=now>=y.program.start&&now<y.program.stop;if(xl!=yl)return xl?-1:1;
+      boolean xf=x.program.start>=now,yf=y.program.start>=now;if(xf!=yf)return xf?-1:1;
+      return Long.compare(x.program.start,y.program.start);
+    });
+    if(out.size()>250)return new ArrayList<>(out.subList(0,250));return out;
+  }
+  View guideHitRow(GuideHit hit){
+    long now=System.currentTimeMillis();boolean live=now>=hit.program.start&&now<hit.program.stop;
+    LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setBackground(rounded(live?Color.argb(245,0,92,150):PV_SURFACE_2,12));
+    TextView t=tv(hit.program.title,14,Color.WHITE);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setSingleLine(true);t.setEllipsize(android.text.TextUtils.TruncateAt.END);
+    String when=new SimpleDateFormat("EEE dd MMM · HH:mm",Locale.getDefault()).format(new Date(hit.program.start));TextView m=tv((live?"AHORA · ":"")+when+" · "+hit.channel.name,11,live?CYAN:MUTED);m.setSingleLine(true);m.setEllipsize(android.text.TextUtils.TruncateAt.END);
+    row.addView(t,new LinearLayout.LayoutParams(-1,dp(27)));row.addView(m,new LinearLayout.LayoutParams(-1,dp(23)));return row;
+  }
+  void openGuideHit(GuideHit hit){
+    long now=System.currentTimeMillis();boolean live=now>=hit.program.start&&now<hit.program.stop;
+    String msg=hit.program.title+"\n"+new SimpleDateFormat("EEE dd MMM · HH:mm",Locale.getDefault()).format(new Date(hit.program.start))+"–"+hhmm(hit.program.stop)+"\n"+hit.channel.name+(hit.program.description.isEmpty()?"":"\n\n"+hit.program.description);
+    AlertDialog.Builder b=new AlertDialog.Builder(this).setTitle(live?"En emisión":"Programa encontrado").setMessage(msg).setNegativeButton("Cerrar",null).setNeutralButton("Ver programación",(x,w)->showChannelSchedule(hit.channel));
+    if(live)b.setPositiveButton("Ver ahora",(x,w)->{showLivePlayer(category);play(hit.channel);});AlertDialog d=b.create();styleDialog(d);
+  }
+  void showGuide(){
+    if(programGuide.isEmpty()){
+      if(epgLoading){pvMessage("Programación","La guía EPG se está descargando y procesando.\n\nPuedes seguir usando PalmaVision y volver a Programación en unos momentos.");return;}
+      if(all.isEmpty()){pvMessage("Programación","La lista de canales todavía se está cargando.");return;}
+      String retryUrl=!lastEpgUrl.isEmpty()?lastEpgUrl:detectedPlaylistEpgUrl;
+      if(!retryUrl.isEmpty()){AlertDialog d=new AlertDialog.Builder(this).setTitle("Programación").setMessage(epgLastError.isEmpty()?"La guía todavía no tiene datos disponibles.":"No se pudo cargar la guía.\n\n"+epgLastError+"\n\nURL: "+redactSecrets(retryUrl)).setNegativeButton("Cerrar",null).setPositiveButton("Reintentar",(x,w)->{loadXmltv(retryUrl,"EPG de la lista");toast("Recargando guía EPG");}).setNeutralButton("Configurar",(x,w)->showLists()).create();styleDialog(d);return;}
+      pvMessage("Programación","Esta lista no incluye una URL EPG/XMLTV.\n\nPuedes agregarla en Configuración → Fuentes de TV → Guía EPG / XMLTV.");return;
+    }
+    setPage("guide","Programación");boolean phone=getResources().getConfiguration().screenWidthDp<600;
+    LinearLayout pageBox=new LinearLayout(this);pageBox.setOrientation(LinearLayout.VERTICAL);pageBox.setPadding(dp(10),dp(8),dp(10),dp(10));pageBox.setBackground(outlinePanel());contentFrame.addView(pageBox,new FrameLayout.LayoutParams(-1,-1));
+    TextView h=tv("Programación",20,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);pageBox.addView(h,new LinearLayout.LayoutParams(-1,dp(38)));
+
+    LinearLayout info=new LinearLayout(this);info.setGravity(Gravity.CENTER_VERTICAL);
+    TextView s=tv(guideFilterLabel(guideDayFilter)+" · "+activeEpgLabel,12,CYAN);info.addView(s,new LinearLayout.LayoutParams(0,dp(38),1));
+    Button refreshGuide=iconBtn("Actualizar",R.drawable.pv_ic_refresh);refreshGuide.setTextSize(11);info.addView(refreshGuide,new LinearLayout.LayoutParams(dp(phone?112:132),dp(40)));pageBox.addView(info,new LinearLayout.LayoutParams(-1,dp(42)));
+
+    EditText q=sourceField("Buscar en programación · ej. FC Barcelona",false);q.setSingleLine(true);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);pageBox.addView(q,new LinearLayout.LayoutParams(-1,dp(48)));
+
+    List<Channel> source=baseForCategory(category);ArrayList<Channel> data=new ArrayList<>();for(Channel ch:source)if(programGuide.containsKey(ch.id))data.add(ch);if(current!=null&&programGuide.containsKey(current.id)&&!data.contains(current))data.add(0,current);
+    ArrayList<GuideHit> hits=new ArrayList<>();final boolean[] searchMode={false};final String[] executedQuery={""};
+    ListView lv=new ListView(this);
+    BaseAdapter a=new BaseAdapter(){
+      public int getCount(){return searchMode[0]?hits.size():data.size();}
+      public Object getItem(int pos){return searchMode[0]?hits.get(pos):data.get(pos);}
+      public long getItemId(int pos){return pos;}
+      public View getView(int pos,View old,ViewGroup parent){return searchMode[0]?guideHitRow(hits.get(pos)):channelRow(data.get(pos),current!=null&&current.id.equals(data.get(pos).id),old);}
+    };
+    lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));
+    lv.setOnItemClickListener((parent,v,pos,id)->{if(searchMode[0])openGuideHit(hits.get(pos));else showChannelSchedule(data.get(pos));});
+
+    final Runnable[] runSearch=new Runnable[1];
+    runSearch[0]=()->{
+      String query=q.getText().toString().trim();
+      ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(q.getWindowToken(),0);q.clearFocus();
+      if(query.isEmpty()){guideSearchGeneration++;executedQuery[0]="";searchMode[0]=false;hits.clear();s.setText(guideFilterLabel(guideDayFilter)+" · "+activeEpgLabel);a.notifyDataSetChanged();return;}
+      executedQuery[0]=query;searchMode[0]=true;hits.clear();a.notifyDataSetChanged();s.setText("Buscando “"+query+"”…");long gen=++guideSearchGeneration;int filter=guideDayFilter;
+      guideIo.submit(()->{
+        ArrayList<GuideHit> result=guideSearchHits(query,filter);
+        mainHandler.post(()->{
+          if(gen!=guideSearchGeneration||!"guide".equals(page))return;
+          hits.clear();hits.addAll(result);searchMode[0]=true;
+          s.setText(result.isEmpty()?"No encontramos programación para “"+query+"”":result.size()+" resultado"+(result.size()==1?"":"s")+" · "+guideFilterLabel(filter));
+          a.notifyDataSetChanged();
+        });
+      });
+    };
+
+    q.addTextChangedListener(new android.text.TextWatcher(){
+      public void beforeTextChanged(CharSequence x,int a1,int b1,int c1){}
+      public void onTextChanged(CharSequence x,int a1,int b1,int c1){
+        String query=x.toString().trim();guideSearchGeneration++;
+        if(query.isEmpty()){executedQuery[0]="";searchMode[0]=false;hits.clear();s.setText(guideFilterLabel(guideDayFilter)+" · "+activeEpgLabel);}
+        else if(!query.equals(executedQuery[0])){searchMode[0]=true;hits.clear();s.setText("Pulsa Enter / ✓ para buscar");}
+        a.notifyDataSetChanged();
+      }
+      public void afterTextChanged(android.text.Editable e){}
+    });
+    q.setOnEditorActionListener((v,actionId,event)->{
+      boolean enter=actionId==EditorInfo.IME_ACTION_SEARCH||actionId==EditorInfo.IME_ACTION_DONE||actionId==EditorInfo.IME_ACTION_GO||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_ENTER&&event.getAction()==KeyEvent.ACTION_UP);
+      if(!enter)return false;runSearch[0].run();return true;
+    });
+
+    HorizontalScrollView filterScroll=new HorizontalScrollView(this);filterScroll.setHorizontalScrollBarEnabled(false);
+    LinearLayout filterRow=new LinearLayout(this);filterRow.setGravity(Gravity.CENTER_VERTICAL);
+    String[] fl={"Todos","Hoy","Mañana","3 días","7 días"};int[] fv={0,1,2,3,7};
+    Button[] fb=new Button[fl.length];
+    for(int i=0;i<fl.length;i++){
+      Button b=actionBtn(fl[i],CARD);b.setTextSize(11);fb[i]=b;final int k=i;
+      b.setBackground(buttonBg(fv[i]==guideDayFilter?PV_PRIMARY:PV_BUTTON,PV_BUTTON_FOCUS,14));
+      b.setOnClickListener(v->{guideDayFilter=fv[k];for(int j=0;j<fb.length;j++)fb[j].setBackground(buttonBg(fv[j]==guideDayFilter?PV_PRIMARY:PV_BUTTON,PV_BUTTON_FOCUS,14));if(q.getText().toString().trim().isEmpty())s.setText(guideFilterLabel(guideDayFilter)+" · "+activeEpgLabel);else runSearch[0].run();});
+      LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(phone?82:105),dp(42));bp.setMargins(0,dp(4),dp(6),dp(4));filterRow.addView(b,bp);
+    }
+    filterScroll.addView(filterRow,new HorizontalScrollView.LayoutParams(-2,dp(50)));pageBox.addView(filterScroll,new LinearLayout.LayoutParams(-1,dp(52)));
+    pageBox.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
+
+    refreshGuide.setOnClickListener(v->{String u=!lastEpgUrl.isEmpty()?lastEpgUrl:detectedPlaylistEpgUrl;if(u.isEmpty()){toast("No hay una URL EPG configurada");return;}loadXmltv(u,"EPG actualizada");toast("Actualizando guía EPG…");});
+    if(data.isEmpty()){TextView e=tv("La guía cargada no coincide con los canales de esta categoría.",14,MUTED);pageBox.addView(e,new LinearLayout.LayoutParams(-1,dp(60)));}
+  }
 
   void showChannelSchedule(Channel ch){setPage("schedule","Programación");LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(10),dp(8),dp(10),dp(10));page.setBackground(outlinePanel());contentFrame.addView(page,new FrameLayout.LayoutParams(-1,-1));TextView h=tv(ch.name,20,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);page.addView(h,new LinearLayout.LayoutParams(-1,dp(38)));TextView sub=tv("Programación · próximas 24 horas",12,CYAN);page.addView(sub,new LinearLayout.LayoutParams(-1,dp(28)));List<Program> list=programGuide.get(ch.id);LinearLayout holder=new LinearLayout(this);holder.setOrientation(LinearLayout.VERTICAL);ScrollView scroll=new ScrollView(this);scroll.addView(holder,new ScrollView.LayoutParams(-1,-2));page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));long now=System.currentTimeMillis();if(list!=null)for(Program pr:list){boolean on=now>=pr.start&&now<pr.stop;LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setBackground(rounded(on?Color.argb(245,0,92,150):PV_SURFACE_2,12));TextView time=tv(hhmm(pr.start)+" – "+hhmm(pr.stop)+(on?" · AHORA":""),11,on?CYAN:MUTED);TextView name=tv(pr.title,14,Color.WHITE);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);row.addView(time,new LinearLayout.LayoutParams(-1,dp(22)));row.addView(name,new LinearLayout.LayoutParams(-1,dp(28)));LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,dp(58));rp.setMargins(0,dp(4),0,dp(4));holder.addView(row,rp);}Button watch=primaryBtn("Ver canal");page.addView(watch,new LinearLayout.LayoutParams(-1,dp(52)));watch.setOnClickListener(v->{showLivePlayer(category);play(ch);});}
 
@@ -691,24 +813,176 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
   void showVodTrackMenu(){if(vodPlayer==null)return;int audioCount=trackCount(vodPlayer,C.TRACK_TYPE_AUDIO),subtitleCount=trackCount(vodPlayer,C.TRACK_TYPE_TEXT);ArrayList<String> opts=new ArrayList<>(),actions=new ArrayList<>();if(audioCount>0){opts.add("Audio · "+audioCount+(audioCount==1?" pista":" pistas"));actions.add("audio");}if(subtitleCount>0){opts.add("Subtítulos · "+subtitleCount+(subtitleCount==1?" pista":" pistas"));actions.add("subs");opts.add("Tamaño de subtítulos · "+subtitleSizeLabel(preferredSubtitleSize));actions.add("size");}if(opts.isEmpty()){toast("Este contenido no ofrece pistas seleccionables");return;}AlertDialog d=new AlertDialog.Builder(this).setTitle("Audio y subtítulos disponibles").setItems(opts.toArray(new String[0]),(x,w)->{String a=actions.get(w);if("audio".equals(a))showTracksForPlayer(vodPlayer,C.TRACK_TYPE_AUDIO);else if("subs".equals(a))showTracksForPlayer(vodPlayer,C.TRACK_TYPE_TEXT);else choosePlaybackSubtitleSize(vodPlayerView,null);}).setNegativeButton("Cerrar",null).create();styleDialog(d);}
   void showTracksForPlayer(ExoPlayer target,int type){Tracks t=target.getCurrentTracks();ArrayList<String> labels=new ArrayList<>();ArrayList<TrackSelectionOverride> ovs=new ArrayList<>();LinkedHashSet<String> seen=new LinkedHashSet<>();if(type==C.TRACK_TYPE_TEXT)labels.add("Desactivados");for(Tracks.Group g:t.getGroups())if(g.getType()==type)for(int i=0;i<g.length;i++){Format f=g.getTrackFormat(i);String label=trackLabel(f,type,ovs.size());String key=GuideSearch.normalize(label);if(!seen.add(key))continue;labels.add(label);ovs.add(new TrackSelectionOverride(g.getMediaTrackGroup(),i));}if(ovs.isEmpty()){toast(type==C.TRACK_TYPE_AUDIO?"No hay pistas de audio disponibles":"No hay subtítulos disponibles");return;}AlertDialog d=new AlertDialog.Builder(this).setTitle(type==C.TRACK_TYPE_AUDIO?"Audio disponible":"Subtítulos disponibles").setItems(labels.toArray(new String[0]),(x,w)->{TrackSelectionParameters.Builder b=target.getTrackSelectionParameters().buildUpon();if(type==C.TRACK_TYPE_TEXT&&w==0){b.setTrackTypeDisabled(C.TRACK_TYPE_TEXT,true);preferredSubtitleLang="off";}else{int k=type==C.TRACK_TYPE_TEXT?w-1:w;b.setTrackTypeDisabled(type,false);b.setOverrideForType(ovs.get(k));if(type==C.TRACK_TYPE_TEXT)preferredSubtitleLang="auto";}target.setTrackSelectionParameters(b.build());savePrefs();ensureVodSubtitleLayer();toast(type==C.TRACK_TYPE_AUDIO?"Audio cambiado":"Subtítulos actualizados");}).setNegativeButton("Cerrar",null).create();styleDialog(d);}
 
-  void showRadio(){setPage("radio","Radio");LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(9),dp(6),dp(9),dp(8));p.setBackground(outlinePanel());contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));TextView h=tv("Radio · solo música",22,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);p.addView(h,new LinearLayout.LayoutParams(-1,dp(36)));TextView sub=tv("Emisoras musicales en español o inglés · sin noticias, deportes ni talk radio",11,CYAN);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(28)));LinearLayout sel=new LinearLayout(this);Button lang=iconBtn(radioLanguage,R.drawable.pv_ic_globe),genre=iconBtn(radioGenre,R.drawable.pv_ic_music);EditText q=sourceField("Buscar radio…",false);q.setText(radioQuery);sel.addView(lang,new LinearLayout.LayoutParams(dp(120),dp(48)));LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(dp(170),dp(48));gp.setMargins(dp(6),0,dp(6),0);sel.addView(genre,gp);sel.addView(q,new LinearLayout.LayoutParams(0,dp(48),1));p.addView(sel,new LinearLayout.LayoutParams(-1,dp(50)));radioNowText=tv(currentRadio==null?"Selecciona una emisora":("▶ "+currentRadio.name+(currentRadio.track.isEmpty()?"":" · "+currentRadio.track)),12,Color.WHITE);radioNowText.setPadding(dp(10),0,dp(10),0);radioNowText.setBackground(rounded(PV_SURFACE_2,12));p.addView(radioNowText,new LinearLayout.LayoutParams(-1,dp(44)));ListView lv=new ListView(this);RadioAdapter a=new RadioAdapter();lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));lv.setOnItemClickListener((x,v,pos,id)->playRadioStation(radioShown.get(pos)));lang.setOnClickListener(v->{String[] opts={"Español","English"};AlertDialog d=new AlertDialog.Builder(this).setTitle("Idioma").setItems(opts,(x,w)->{radioLanguage=opts[w];radioGenre="Todos";showRadio();loadRadioCatalog(radioLanguage);}).setNegativeButton("Cerrar",null).create();styleDialog(d);});genre.setOnClickListener(v->chooseRadioGenre(genre,a));q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a1,int b,int c){}public void onTextChanged(CharSequence s,int a1,int b,int c){radioQuery=s.toString();filterRadio();a.notifyDataSetChanged();}public void afterTextChanged(android.text.Editable e){}});filterRadio();a.notifyDataSetChanged();if(radioItems.isEmpty()||!radioLanguage.equals(radioItems.get(0).language))loadRadioCatalog(radioLanguage);else loadRadioCatalog(radioLanguage);}
+  void showRadio(){
+    setPage("radio","Radio");
+    boolean phone=getResources().getConfiguration().screenWidthDp<600;
+    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(9),dp(6),dp(9),dp(8));p.setBackground(outlinePanel());contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
+    TextView h=tv("Radio · solo música",22,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);p.addView(h,new LinearLayout.LayoutParams(-1,dp(36)));
+    TextView sub=tv("Emisoras musicales en español o inglés · sin noticias, deportes ni talk radio",11,CYAN);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(28)));
+
+    LinearLayout selectors=new LinearLayout(this);selectors.setGravity(Gravity.CENTER_VERTICAL);
+    Button lang=iconBtn(radioLanguage,R.drawable.pv_ic_globe),genre=iconBtn(radioGenre,R.drawable.pv_ic_music);
+    LinearLayout.LayoutParams half1=new LinearLayout.LayoutParams(0,dp(48),1),half2=new LinearLayout.LayoutParams(0,dp(48),1);half1.setMargins(0,0,dp(4),0);half2.setMargins(dp(4),0,0,0);
+    selectors.addView(lang,half1);selectors.addView(genre,half2);p.addView(selectors,new LinearLayout.LayoutParams(-1,dp(50)));
+
+    EditText q=sourceField("Buscar emisora…",false);q.setSingleLine(true);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);q.setText(radioQuery);
+    LinearLayout.LayoutParams qlp=new LinearLayout.LayoutParams(-1,dp(48));qlp.setMargins(0,dp(3),0,dp(5));p.addView(q,qlp);
+
+    radioNowText=tv(currentRadio==null?"Selecciona una emisora":(radioActive()?"▶ ":"◌ ")+currentRadio.name+(currentRadio.track.isEmpty()?"":" · "+currentRadio.track),12,Color.WHITE);
+    radioNowText.setPadding(dp(10),0,dp(10),0);radioNowText.setBackground(rounded(PV_SURFACE_2,12));p.addView(radioNowText,new LinearLayout.LayoutParams(-1,dp(44)));
+
+    ListView lv=new ListView(this);RadioAdapter a=new RadioAdapter();lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
+    lv.setOnItemClickListener((x,v,pos,id)->{if(pos<0||pos>=radioShown.size())return;playRadioStation(radioShown.get(pos));a.notifyDataSetChanged();});
+
+    lang.setOnClickListener(v->{String[] opts={"Español","English"};AlertDialog d=new AlertDialog.Builder(this).setTitle("Idioma").setItems(opts,(x,w)->{
+      String next=opts[w];if(next.equals(radioLanguage))return;radioLanguage=next;radioGenre="Todos";radioQuery="";radioItems.clear();radioShown.clear();radioCatalogLanguage="";showRadio();loadRadioCatalog(radioLanguage);
+    }).setNegativeButton("Cerrar",null).create();styleDialog(d);});
+    genre.setOnClickListener(v->chooseRadioGenre(genre,a));
+
+    q.addTextChangedListener(new android.text.TextWatcher(){
+      public void beforeTextChanged(CharSequence s,int a1,int b,int cc){}
+      public void onTextChanged(CharSequence s,int a1,int b,int cc){
+        radioQuery=s.toString();
+        if(radioSearchTask!=null)mainHandler.removeCallbacks(radioSearchTask);
+        radioSearchTask=()->{filterRadio();a.notifyDataSetChanged();};
+        mainHandler.postDelayed(radioSearchTask,140L);
+      }
+      public void afterTextChanged(android.text.Editable e){}
+    });
+    q.setOnEditorActionListener((v,actionId,event)->{
+      boolean enter=actionId==EditorInfo.IME_ACTION_SEARCH||actionId==EditorInfo.IME_ACTION_DONE||(event!=null&&event.getKeyCode()==KeyEvent.KEYCODE_ENTER&&event.getAction()==KeyEvent.ACTION_UP);
+      if(!enter)return false;
+      filterRadio();a.notifyDataSetChanged();
+      ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(q.getWindowToken(),0);
+      q.clearFocus();return true;
+    });
+
+    filterRadio();a.notifyDataSetChanged();
+    boolean stale=!radioLanguage.equals(radioCatalogLanguage)||radioItems.isEmpty()||System.currentTimeMillis()-radioCatalogLoadedAt>6L*60L*60L*1000L;
+    if(stale&&!radioCatalogLoading)loadRadioCatalog(radioLanguage);
+  }
+
   String radioUrl(String language){try{return "https://all.api.radio-browser.info/json/stations/search?language="+URLEncoder.encode("Español".equals(language)?"spanish":"english","UTF-8")+"&languageExact=true&hidebroken=true&order=votes&reverse=true&limit=350";}catch(Exception e){return "";}}
-  void loadRadioCatalog(String language){final String lang=language,key=safeCacheKey("radio","rb|"+lang),url=radioUrl(lang);radioIo.submit(()->{String cached=readJsonCache(key,12*1024*1024);JSONArray ca=jsonArrayOrNull(cached);if(ca!=null){ArrayList<RadioStation> list=parseRadio(ca,lang);if(!list.isEmpty())mainHandler.post(()->applyRadioCatalog(list,lang,true));}try{String raw=jsonText(url,12*1024*1024);JSONArray arr=new JSONArray(raw);ArrayList<RadioStation> list=parseRadio(arr,lang);if(list.size()<8)throw new IOException("pocas emisoras musicales válidas");writeJsonCache(key,raw);mainHandler.post(()->applyRadioCatalog(list,lang,false));}catch(Exception e){mainHandler.post(()->{if(radioItems.isEmpty())toast("Radio no disponible en este momento · se intentará usar la copia local");});}});}
-  ArrayList<RadioStation> parseRadio(JSONArray arr,String lang){ArrayList<RadioStation> out=new ArrayList<>();LinkedHashMap<String,RadioStation> byName=new LinkedHashMap<>();for(int i=0;i<arr.length();i++){JSONObject o=arr.optJSONObject(i);if(o==null)continue;if(o.optInt("lastcheckok",1)==0)continue;String id=o.optString("stationuuid",o.optString("changeuuid","")).trim(),name=o.optString("name","").trim(),url=o.optString("url_resolved",o.optString("url","")).trim(),tags=o.optString("tags",""),language=o.optString("language",lang),logo=o.optString("favicon","");if(id.isEmpty()||name.isEmpty()||!(url.startsWith("http://")||url.startsWith("https://")))continue;String genre=CachePolicy.radioGenre(language,tags,name);if(genre==null)continue;String dedupe=name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");RadioStation prior=byName.get(dedupe);if(prior!=null){prior.addUrl(url);continue;}RadioStation r=new RadioStation(id,name,lang,genre,url,logo,tags,o.optString("country",""),o.optInt("bitrate",0),o.optInt("votes",0));byName.put(dedupe,r);out.add(r);}Collections.sort(out,(a,b)->Integer.compare(b.votes,a.votes));return out;}
-  void applyRadioCatalog(List<RadioStation> list,String lang,boolean cached){if(!lang.equals(radioLanguage))return;radioItems.clear();radioItems.addAll(list);filterRadio();if("radio".equals(page)){View lv=findFirst(contentFrame,ListView.class);if(lv instanceof ListView&&((ListView)lv).getAdapter() instanceof BaseAdapter)((BaseAdapter)((ListView)lv).getAdapter()).notifyDataSetChanged();if(cached&&radioNowText!=null&&currentRadio==null)radioNowText.setText("Catálogo local · actualizando…");}}
-  void filterRadio(){radioShown.clear();String q=radioQuery.trim().toLowerCase(Locale.ROOT);for(RadioStation r:radioItems){boolean genreOk="Todos".equals(radioGenre)||("Favoritos".equals(radioGenre)&&radioFavorites.contains(r.id))||("Recientes".equals(radioGenre)&&radioRecents.contains(r.id))||r.genre.equals(radioGenre);if(genreOk&&(q.isEmpty()||r.search.contains(q)))radioShown.add(r);}if("Recientes".equals(radioGenre))Collections.sort(radioShown,(a,b)->Integer.compare(radioRecentIndex(a.id),radioRecentIndex(b.id)));}
+  void loadRadioCatalog(String language){
+    final String lang=language;if(radioCatalogLoading&&lang.equals(radioCatalogLanguage))return;
+    radioCatalogLoading=true;radioCatalogLanguage=lang;
+    final String key=safeCacheKey("radio","rb|"+lang),url=radioUrl(lang);
+    radioIo.submit(()->{
+      if(radioItems.isEmpty()){
+        String cached=readJsonCache(key,12*1024*1024);JSONArray ca=jsonArrayOrNull(cached);
+        if(ca!=null){ArrayList<RadioStation> list=parseRadio(ca,lang);if(!list.isEmpty())mainHandler.post(()->applyRadioCatalog(list,lang,true));}
+      }
+      try{
+        String raw=jsonText(url,12*1024*1024);JSONArray arr=new JSONArray(raw);ArrayList<RadioStation> list=parseRadio(arr,lang);
+        if(list.size()<8)throw new IOException("pocas emisoras musicales válidas");
+        writeJsonCache(key,raw);
+        mainHandler.post(()->{radioCatalogLoading=false;radioCatalogLoadedAt=System.currentTimeMillis();applyRadioCatalog(list,lang,false);});
+      }catch(Exception e){
+        mainHandler.post(()->{radioCatalogLoading=false;if(radioItems.isEmpty())toast("Radio no disponible en este momento · usando copia local si existe");});
+      }
+    });
+  }
+  ArrayList<RadioStation> parseRadio(JSONArray arr,String lang){
+    ArrayList<RadioStation> out=new ArrayList<>();LinkedHashMap<String,RadioStation> byName=new LinkedHashMap<>();
+    for(int i=0;i<arr.length();i++){
+      JSONObject o=arr.optJSONObject(i);if(o==null||o.optInt("lastcheckok",1)==0)continue;
+      String id=o.optString("stationuuid",o.optString("changeuuid","")).trim(),name=o.optString("name","").trim();
+      String resolved=o.optString("url_resolved","").trim(),original=o.optString("url","").trim(),url=!resolved.isEmpty()?resolved:original;
+      String tags=o.optString("tags",""),language=o.optString("language",lang),logo=o.optString("favicon","");
+      if(id.isEmpty()||name.isEmpty()||!(url.startsWith("http://")||url.startsWith("https://")))continue;
+      String genre=CachePolicy.radioGenre(language,tags,name);if(genre==null)continue;
+      String dedupe=GuideSearch.normalize(name).replace(" ","");RadioStation prior=byName.get(dedupe);
+      if(prior!=null){prior.addUrl(url);prior.addUrl(original);continue;}
+      RadioStation r=new RadioStation(id,name,lang,genre,url,logo,tags,o.optString("country",""),o.optInt("bitrate",0),o.optInt("votes",0));
+      r.addUrl(original);byName.put(dedupe,r);out.add(r);
+    }
+    Collections.sort(out,(a,b)->Integer.compare(b.votes,a.votes));return out;
+  }
+  void applyRadioCatalog(List<RadioStation> list,String lang,boolean cached){
+    if(!lang.equals(radioLanguage))return;radioCatalogLanguage=lang;if(!cached)radioCatalogLoadedAt=System.currentTimeMillis();
+    radioItems.clear();radioItems.addAll(list);filterRadio();
+    if("radio".equals(page)){View lv=findFirst(contentFrame,ListView.class);if(lv instanceof ListView&&((ListView)lv).getAdapter() instanceof BaseAdapter)((BaseAdapter)((ListView)lv).getAdapter()).notifyDataSetChanged();if(cached&&radioNowText!=null&&currentRadio==null)radioNowText.setText("Catálogo local · actualizando…");}
+  }
+  void filterRadio(){
+    radioShown.clear();String q=GuideSearch.normalize(radioQuery);
+    for(RadioStation r:radioItems){
+      boolean genreOk="Todos".equals(radioGenre)||("Favoritos".equals(radioGenre)&&radioFavorites.contains(r.id))||("Recientes".equals(radioGenre)&&radioRecents.contains(r.id))||r.genre.equals(radioGenre);
+      if(genreOk&&(q.isEmpty()||r.search.contains(q)))radioShown.add(r);
+    }
+    if("Recientes".equals(radioGenre))Collections.sort(radioShown,(a,b)->Integer.compare(radioRecentIndex(a.id),radioRecentIndex(b.id)));
+  }
   int radioRecentIndex(String id){int i=0;for(String x:radioRecents){if(x.equals(id))return i;i++;}return Integer.MAX_VALUE;}
   void chooseRadioGenre(Button b,BaseAdapter a){LinkedHashSet<String> genres=new LinkedHashSet<>();genres.add("Todos");genres.add("Favoritos");genres.add("Recientes");for(RadioStation r:radioItems)genres.add(r.genre);String[] opts=genres.toArray(new String[0]);AlertDialog d=new AlertDialog.Builder(this).setTitle("Género · "+radioLanguage).setItems(opts,(x,w)->{radioGenre=opts[w];b.setText(radioGenre);filterRadio();a.notifyDataSetChanged();}).setNegativeButton("Cerrar",null).create();styleDialog(d);}
-  final class RadioAdapter extends BaseAdapter{public int getCount(){return radioShown.size();}public RadioStation getItem(int p){return radioShown.get(p);}public long getItemId(int p){return p;}public View getView(int p,View old,ViewGroup parent){RadioStation r=getItem(p);LinearLayout row=new LinearLayout(MainActivity.this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(8),dp(5),dp(8),dp(5));row.setBackground(rounded(currentRadio!=null&&currentRadio.id.equals(r.id)?PV_PRIMARY:Color.argb(232,6,29,50),12));ImageView logo=new ImageView(MainActivity.this);logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);row.addView(logo,new LinearLayout.LayoutParams(dp(54),dp(54)));LinearLayout box=new LinearLayout(MainActivity.this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(10),0,dp(4),0);TextView n=tv(r.name,14,Color.WHITE);n.setTypeface(Typeface.DEFAULT,Typeface.BOLD);n.setSingleLine(true);n.setEllipsize(android.text.TextUtils.TruncateAt.END);TextView m=tv(r.genre+(r.country.isEmpty()?"":" · "+r.country)+(r.bitrate>0?" · "+r.bitrate+" kbps":""),11,CYAN);box.addView(n,new LinearLayout.LayoutParams(-1,dp(28)));box.addView(m,new LinearLayout.LayoutParams(-1,dp(23)));row.addView(box,new LinearLayout.LayoutParams(0,dp(54),1));TextView star=tv(radioFavorites.contains(r.id)?"★":"☆",22,CYAN);star.setGravity(Gravity.CENTER);row.addView(star,new LinearLayout.LayoutParams(dp(44),dp(50)));bindPoster(logo,r.logo,"radio_"+r.id);row.setFocusable(true);row.setOnLongClickListener(v->{if(!radioFavorites.add(r.id))radioFavorites.remove(r.id);savePrefs();notifyDataSetChanged();return true;});return row;}}
-  void ensureRadioPlayer(){if(radioPlayer!=null)return;radioPlayer=new ExoPlayer.Builder(this).build();radioPlayer.addListener(new Player.Listener(){@Override public void onPlaybackStateChanged(int s){if(s==Player.STATE_READY){radioRetries=0;updateRadioNow();updateNowBar();}else if(s==Player.STATE_BUFFERING)updateRadioText(radioRetries>0?"Reconectando radio "+radioRetries+"/3…":"Conectando radio…");}@Override public void onPlayerError(PlaybackException e){if(currentRadio!=null&&radioRetries<3){radioRetries++;mainHandler.postDelayed(()->startRadioStream(currentRadio),700L+radioRetries*700L);}else updateRadioText("Emisora temporalmente no disponible");}@Override public void onMediaMetadataChanged(MediaMetadata m){if(currentRadio!=null){CharSequence t=m.title;if(t!=null&&!t.toString().trim().isEmpty()&&!t.toString().equals(currentRadio.name))currentRadio.track=t.toString();updateRadioNow();}}});}
-  void playRadioStation(RadioStation r){pauseVodForOtherMedia();if(player!=null)player.pause();currentRadio=r;addRadioRecent(r.id);radioRetries=0;ensureRadioPlayer();startRadioStream(r);if("radio".equals(page))showRadio();updateNowBar();}
-  void startRadioStream(RadioStation r){if(radioPlayer==null||r==null)return;String stream=r.urlForRetry(radioRetries);radioPlayer.setMediaItem(new MediaItem.Builder().setUri(stream).setMediaId(r.id).setMediaMetadata(new MediaMetadata.Builder().setTitle(r.name).build()).build());radioPlayer.prepare();radioPlayer.play();}
+  final class RadioAdapter extends BaseAdapter{
+    public int getCount(){return radioShown.size();}public RadioStation getItem(int p){return radioShown.get(p);}public long getItemId(int p){return p;}
+    public View getView(int p,View old,ViewGroup parent){
+      RadioStation r=getItem(p);LinearLayout row=new LinearLayout(MainActivity.this);row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(8),dp(5),dp(8),dp(5));row.setBackground(rounded(currentRadio!=null&&currentRadio.id.equals(r.id)?PV_PRIMARY:Color.argb(232,6,29,50),12));
+      ImageView logo=new ImageView(MainActivity.this);logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);row.addView(logo,new LinearLayout.LayoutParams(dp(54),dp(54)));
+      LinearLayout box=new LinearLayout(MainActivity.this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(10),0,dp(4),0);
+      TextView n=tv(r.name,14,Color.WHITE);n.setTypeface(Typeface.DEFAULT,Typeface.BOLD);n.setSingleLine(true);n.setEllipsize(android.text.TextUtils.TruncateAt.END);
+      TextView m=tv(r.genre+(r.country.isEmpty()?"":" · "+r.country)+(r.bitrate>0?" · "+r.bitrate+" kbps":""),11,CYAN);
+      box.addView(n,new LinearLayout.LayoutParams(-1,dp(28)));box.addView(m,new LinearLayout.LayoutParams(-1,dp(23)));row.addView(box,new LinearLayout.LayoutParams(0,dp(54),1));
+      TextView star=tv(radioFavorites.contains(r.id)?"★":"☆",22,CYAN);star.setGravity(Gravity.CENTER);row.addView(star,new LinearLayout.LayoutParams(dp(44),dp(50)));
+      bindPoster(logo,r.logo,"radio_"+r.id);row.setFocusable(true);row.setOnLongClickListener(v->{if(!radioFavorites.add(r.id))radioFavorites.remove(r.id);savePrefs();notifyDataSetChanged();return true;});return row;
+    }
+  }
+
+  void ensureRadioPlayer(){
+    if(radioPlayer!=null)return;
+    DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory()
+        .setUserAgent("PalmaVision/2.4.2")
+        .setConnectTimeoutMs(8000)
+        .setReadTimeoutMs(12000)
+        .setAllowCrossProtocolRedirects(true);
+    DefaultDataSource.Factory data=new DefaultDataSource.Factory(this,http);
+    radioPlayer=new ExoPlayer.Builder(this).setMediaSourceFactory(new DefaultMediaSourceFactory(data)).build();
+    radioPlayer.addListener(new Player.Listener(){
+      @Override public void onPlaybackStateChanged(int s){
+        if(s==Player.STATE_READY){cancelRadioWatchdog();radioRetries=0;updateRadioNow();updateNowBar();}
+        else if(s==Player.STATE_BUFFERING)updateRadioText(radioRetries>0?"Probando fuente "+(radioRetries+1)+"…":"Conectando radio…");
+        else if(s==Player.STATE_ENDED)retryRadioStream();
+      }
+      @Override public void onPlayerError(PlaybackException e){retryRadioStream();}
+      @Override public void onMediaMetadataChanged(MediaMetadata m){
+        if(currentRadio!=null){CharSequence t=m.title;if(t!=null&&!t.toString().trim().isEmpty()&&!t.toString().equals(currentRadio.name))currentRadio.track=t.toString();updateRadioNow();}
+      }
+    });
+  }
+  void cancelRadioWatchdog(){if(radioWatchdog!=null){mainHandler.removeCallbacks(radioWatchdog);radioWatchdog=null;}}
+  void armRadioWatchdog(RadioStation r,long token){
+    cancelRadioWatchdog();radioWatchdog=()->{
+      if(currentRadio!=r||token!=radioAttemptToken||radioPlayer==null)return;
+      if(radioPlayer.getPlaybackState()!=Player.STATE_READY)retryRadioStream();
+    };mainHandler.postDelayed(radioWatchdog,12000L);
+  }
+  void retryRadioStream(){
+    cancelRadioWatchdog();RadioStation r=currentRadio;if(r==null||radioPlayer==null)return;
+    if(radioRetries>=3){updateRadioText("Emisora temporalmente no disponible");return;}
+    radioRetries++;
+    updateRadioText(r.urls.size()>1?"Probando fuente alternativa "+Math.min(radioRetries+1,r.urls.size())+"/"+r.urls.size()+"…":"Reintentando radio "+radioRetries+"/3…");
+    mainHandler.postDelayed(()->{if(currentRadio==r)startRadioStream(r);},500L+radioRetries*450L);
+  }
+  void playRadioStation(RadioStation r){
+    pauseVodForOtherMedia();if(player!=null)player.pause();if(r==null)return;
+    currentRadio=r;r.track="";addRadioRecent(r.id);radioRetries=0;ensureRadioPlayer();
+    updateRadioText("Conectando · "+r.name+"…");startRadioStream(r);updateNowBar();
+  }
+  void startRadioStream(RadioStation r){
+    if(radioPlayer==null||r==null||currentRadio!=r)return;
+    String stream=r.urlForRetry(radioRetries);if(stream==null||stream.isEmpty()){retryRadioStream();return;}
+    long token=++radioAttemptToken;
+    try{
+      radioPlayer.stop();radioPlayer.clearMediaItems();
+      radioPlayer.setMediaItem(new MediaItem.Builder().setUri(stream).setMediaId(r.id).setMediaMetadata(new MediaMetadata.Builder().setTitle(r.name).build()).build());
+      radioPlayer.prepare();radioPlayer.play();armRadioWatchdog(r,token);
+    }catch(Exception e){retryRadioStream();}
+  }
   void updateRadioText(String text){mainHandler.post(()->{if(radioNowText!=null)radioNowText.setText(text);});}
   void updateRadioNow(){if(currentRadio==null)return;String x="▶ "+currentRadio.name+(currentRadio.track.isEmpty()?"":" · "+currentRadio.track);updateRadioText(x);}
   void pauseRadioForOtherMedia(){if(radioPlayer!=null&&radioPlayer.isPlaying())radioPlayer.pause();updateNowBar();}
   boolean radioActive(){return currentRadio!=null&&radioPlayer!=null&&radioPlayer.isPlaying();}
-  void returnToActiveMedia(){if(radioActive())showRadio();else showCurrentChannelContext();}
-  void stopActiveMedia(){if(radioActive()){radioPlayer.stop();currentRadio=null;updateNowBar();if("radio".equals(page))showRadio();}else stopCurrentPlayback();}
+  void returnToActiveMedia(){if(currentRadio!=null)showRadio();else showCurrentChannelContext();}
+  void stopActiveMedia(){if(currentRadio!=null&&radioPlayer!=null){cancelRadioWatchdog();radioPlayer.stop();currentRadio=null;updateNowBar();if("radio".equals(page))showRadio();}else stopCurrentPlayback();}
 
   void saveEpgCache(String url,Map<String,List<Program>> schedules){try{JSONObject root=new JSONObject();root.put("saved_at",System.currentTimeMillis());JSONObject chans=new JSONObject();for(Map.Entry<String,List<Program>> e:schedules.entrySet()){JSONArray a=new JSONArray();int n=0;for(Program p:e.getValue()){if(n++>=256)break;JSONObject x=new JSONObject();x.put("t",p.title);x.put("d",p.description);x.put("s",p.start);x.put("e",p.stop);a.put(x);}if(a.length()>0)chans.put(e.getKey(),a);}root.put("channels",chans);writeJsonCache(safeCacheKey("epg",url),root.toString());getSharedPreferences("tvplus",MODE_PRIVATE).edit().putLong("epg_cache_time_"+sha1(url),System.currentTimeMillis()).apply();}catch(Exception ignored){}}
   void restoreEpgCache(String url,String label,long generation,int total){String raw=readJsonCache(safeCacheKey("epg",url),32*1024*1024);if(raw==null)return;try{JSONObject root=new JSONObject(raw),chans=root.optJSONObject("channels");if(chans==null)return;ConcurrentHashMap<String,List<Program>> schedules=new ConcurrentHashMap<>();ConcurrentHashMap<String,Program> fresh=new ConcurrentHashMap<>();long now=System.currentTimeMillis();Iterator<String> it=chans.keys();while(it.hasNext()){String id=it.next();JSONArray a=chans.optJSONArray(id);if(a==null)continue;ArrayList<Program> list=new ArrayList<>();for(int i=0;i<a.length();i++){JSONObject x=a.optJSONObject(i);if(x==null)continue;Program pr=new Program(x.optString("t","Programa"),x.optString("d",""),x.optLong("s",0),x.optLong("e",0));if(pr.start>0&&pr.stop>0){list.add(pr);if(now>=pr.start&&now<pr.stop)fresh.put(id,pr);}}if(!list.isEmpty())schedules.put(id,list);}if(schedules.isEmpty())return;long saved=root.optLong("saved_at",0);mainHandler.post(()->{if(generation!=epgGeneration)return;currentPrograms.clear();currentPrograms.putAll(fresh);programGuide.clear();programGuide.putAll(schedules);activeEpgLabel="EPG local · "+schedules.size()+"/"+total+" canales · "+ageLabel(saved);if(adapter!=null)adapter.notifyDataSetChanged();});}catch(Exception ignored){}}
@@ -726,9 +1000,9 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
   static final class SeriesEpisode{final String id,title,container,duration;final int season,episode;SeriesEpisode(String i,String t,String c,int s,int e,String d){id=i;title=t==null?"Episodio "+e:t;container=c==null?"mp4":c;season=s;episode=e;duration=d==null?"":d;}}
   static final class SeriesPayload{final ArrayList<SeriesEpisode> episodes=new ArrayList<>();String plot="";}
   static final class VodPlayback{final String kind,id,parentId,title,url,poster;final int season,episode;VodPlayback(String k,String i,String p,String t,String u,String po,int s,int e){kind=k;id=i;parentId=p==null?"":p;title=t;url=u;poster=po==null?"":po;season=s;episode=e;}}
-  static final class RadioStation{final String id,name,language,genre,url,logo,tags,country,search;final int bitrate,votes;final ArrayList<String> urls=new ArrayList<>();String track="";RadioStation(String i,String n,String l,String g,String u,String lo,String t,String c,int b,int v){id=i;name=n;language=l;genre=g;url=u;logo=lo==null?"":lo;tags=t==null?"":t;country=c==null?"":c;bitrate=b;votes=v;search=(n+" "+g+" "+tags+" "+country).toLowerCase(Locale.ROOT);addUrl(u);}void addUrl(String u){if(u!=null&&!u.isEmpty()&&!urls.contains(u))urls.add(u);}String urlForRetry(int retry){if(urls.isEmpty())return url;if(retry<2)return urls.get(0);return urls.get(Math.min(urls.size()-1,retry-1));}}
+  static final class RadioStation{final String id,name,language,genre,url,logo,tags,country,search;final int bitrate,votes;final ArrayList<String> urls=new ArrayList<>();String track="";RadioStation(String i,String n,String l,String g,String u,String lo,String t,String c,int b,int v){id=i;name=n;language=l;genre=g;url=u;logo=lo==null?"":lo;tags=t==null?"":t;country=c==null?"":c;bitrate=b;votes=v;search=GuideSearch.normalize(n+" "+g+" "+tags+" "+country);addUrl(u);}void addUrl(String u){if(u!=null&&!u.isEmpty()&&(u.startsWith("http://")||u.startsWith("https://"))&&!urls.contains(u))urls.add(u);}String urlForRetry(int retry){if(urls.isEmpty())return url;return urls.get(Math.min(urls.size()-1,Math.max(0,retry)));}}
   static final class Program{final String title,description;final long start,stop;Program(String t,long s,long e){this(t,"",s,e);}Program(String t,String d,long s,long e){title=t;description=d==null?"":d;start=s;stop=e;}}
-  static final class GuideHit{final Channel channel;final Program program;GuideHit(Channel c,Program p){channel=c;program=p;}}
+  static final class GuideHit{final Channel channel;final Program program;final int relevance;GuideHit(Channel c,Program p){this(c,p,0);}GuideHit(Channel c,Program p,int r){channel=c;program=p;relevance=r;}}
   static final class Health{final int state;final String text;final long latency,checkedAt;Health(int s,String t,long l,long c){state=s;text=t;latency=l;checkedAt=c;}}
   static final class Channel{final String id,name,group,url,logo,search;final int score;Channel(String i,String n,String g,String u,String l,int sc){id=i;name=n;group=g;url=u;logo=l==null?"":l;score=sc;search=(n+" "+g).toLowerCase(Locale.ROOT);}}
 }
