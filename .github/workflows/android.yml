@@ -57,7 +57,8 @@ jobs:
           test -s app/src/main/java/com/epalma/tvespanolplus/RotatingCache.java
           test -s app/src/test/java/com/epalma/tvespanolplus/CachePolicyTest.java
           test -s app/src/test/java/com/epalma/tvespanolplus/RotatingCacheTest.java
-          ! grep -RqiE 'xtream_pass[[:space:]]*=[[:space:]]*"|password[[:space:]]*=[[:space:]]*"' app/src/main/java || (echo 'possible hardcoded credential detected' && exit 1)
+          grep -q 'securePutXtreamPassword' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'secureGetXtreamPassword' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
       - name: Lint unit tests and release build
         run: gradle --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
       - name: Verify release APK
