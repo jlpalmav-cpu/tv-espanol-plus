@@ -81,7 +81,7 @@ adb("shell","am","start","-n",ACT)
 time.sleep(10)
 wait_text("Canales en vivo")
 wait_text("Vista Doble")
-wait_text("Enviar a TV")
+assert_no_text("Enviar a TV")
 wait_text("Salir")
 
 # Vista Doble -> choose Canal 1 -> full screen must show only one channel
@@ -123,23 +123,32 @@ tap_text("Guardar bloqueos")
 wait_text("Control parental")
 wait_text("1 canales bloqueados")
 
-# TV/Projector: device-first UI, no protocol-first cards
+# TV/Projector now exists only inside the live player.
 back()
-wait_text("Enviar a TV")
-tap_text("Enviar a TV")
+back()
+wait_text("Canales en vivo")
+assert_no_text("Enviar a TV")
+tap_text("Canales en vivo",0)
+wait_text("Deportes")
+tap_text("Deportes",0)
 wait_text("Enviar a TV / Proyector")
+tap_text("FTV",0,15)
+wait_text("FTV")
+tap_text("Enviar a TV / Proyector")
 wait_text("Dispositivos encontrados")
 wait_text("Buscar de nuevo")
 wait_text("Cambiar Wi")
 assert_no_text("Mejores opciones disponibles")
 assert_no_text("Seleccionar dispositivo Cast")
 
-# Emulator has no physical TV; system wireless-display fallback must remain reachable when exposed.
-nodes=text_nodes("Buscar otros TV / proyectores")
-if nodes:
-    print("OK system wireless-display fallback exposed")
+# Back must return to the same live-player context, not Home.
+back()
+wait_text("Enviar a TV / Proyector")
+wait_text("FTV")
 
-# Wi-Fi network chooser must launch Android Settings/Panel
+# Wi-Fi selector is still reachable from the TV output screen.
+tap_text("Enviar a TV / Proyector")
+wait_text("Dispositivos encontrados")
 tap_text("Cambiar Wi")
 time.sleep(2)
 state=resumed()
@@ -151,4 +160,4 @@ print("OK Wi-Fi selector opened")
 back()
 time.sleep(1)
 adb("logcat","-d","-t","2500")
-print("PALMAVISION v2.2.2 AUTO CONNECT UI SMOKE: PASS")
+print("PALMAVISION v2.2.4 PLAYER TV BUTTON UI SMOKE: PASS")
