@@ -14,6 +14,11 @@ import android.net.*;
 import android.net.wifi.WifiManager;
 import android.os.*;
 import android.util.Xml;
+import android.util.Base64;
+import android.util.Rational;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.text.method.PasswordTransformationMethod;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
@@ -38,11 +43,19 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.*;
 import java.util.zip.GZIPInputStream;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import org.xmlpull.v1.XmlPullParser;
 
 @UnstableApi
@@ -69,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
   final ArrayDeque<String> recents=new ArrayDeque<>();
   ExoPlayer player, dualPlayer; PlayerView playerView, dualPlayerView; FrameLayout homePlayerHolder, contentFrame, dualPrimaryHolder, dualSecondaryHolder;
   Channel current, previous, dualChannel; ChannelAdapter adapter; ListView channelList; EditText search; TextView status,count,sourceText,title,screenTitle;
-  Button favButton,homeButton,exitButton; View playerEmpty; CastContext castContext; MediaRouteButton castRouteButton; MediaRouteSelector castSelector; MediaRouter mediaRouter; MediaRouter.Callback castRouteCallback; TextView castStatus,tvAnalysisStatus; LinearLayout tvResults; SessionManagerListener<CastSession> castSessionListener; final List<TvTarget> tvTargets=Collections.synchronizedList(new ArrayList<>()); final List<TvDevice> tvDevices=Collections.synchronizedList(new ArrayList<>()); TvTarget activeTvTarget=null; String activeTvMethod=""; long tvScanGeneration=0,autoConnectGeneration=0,epgGeneration=0; String mode="all", category="Todos", page="home"; int retries=0, resizeMode=0, playToken=0; boolean autoRetryEnabled=true, epgLoading=false, parentalEnabled=false, dualAudioPrimary=true; int dualFocus=0; String parentalPinHash="";
+  Button favButton,homeButton,exitButton,sendTvButton,nowBackButton,nowStopButton; LinearLayout nowBar; TextView nowBarText; View playerEmpty; CastContext castContext; MediaRouteButton castRouteButton; MediaRouteSelector castSelector; MediaRouter mediaRouter; MediaRouter.Callback castRouteCallback; TextView castStatus,tvAnalysisStatus; LinearLayout tvResults; SessionManagerListener<CastSession> castSessionListener; final List<TvTarget> tvTargets=Collections.synchronizedList(new ArrayList<>()); final List<TvDevice> tvDevices=Collections.synchronizedList(new ArrayList<>()); TvTarget activeTvTarget=null; String activeTvMethod=""; long tvScanGeneration=0,autoConnectGeneration=0,epgGeneration=0; String mode="all", category="Todos", page="home", lastLiveCategory="Todos", lastLiveQuery=""; int retries=0, resizeMode=0, playToken=0, lastLivePosition=0, lastLiveTop=0, pinFailures=0; long pinLockedUntil=0L; boolean autoRetryEnabled=true, epgLoading=false, parentalEnabled=false, dualAudioPrimary=true; int dualFocus=0; String parentalPinHash="";
   final Handler mainHandler=new Handler(Looper.getMainLooper()); Runnable startupWatchdog; long connectStartedAt=0L; String lastHealth="Sin verificar";
 
   @Override public void onCreate(Bundle b){super.onCreate(b);loadPrefs();buildShell();initPlayer();initCast();showHome();loadSavedSource();}
@@ -107,10 +120,15 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout.LayoutParams exitLp=new LinearLayout.LayoutParams(dp(phone?66:92),dp(phone?42:46));exitLp.setMargins(dp(6),0,0,0);top.addView(exitButton,exitLp);
     homeButton.setOnClickListener(v->showHome());exitButton.setOnClickListener(v->confirmExit());shell.addView(top,new LinearLayout.LayoutParams(-1,dp(phone?58:72)));
     contentFrame=new FrameLayout(this);shell.addView(contentFrame,new LinearLayout.LayoutParams(-1,0,1));
+    nowBar=new LinearLayout(this);nowBar.setGravity(Gravity.CENTER_VERTICAL);nowBar.setPadding(dp(10),dp(5),dp(8),dp(5));nowBar.setBackground(rounded(Color.argb(248,4,27,49),14));nowBarText=tv("",12,Color.WHITE);nowBarText.setSingleLine(true);nowBarText.setEllipsize(android.text.TextUtils.TruncateAt.END);nowBarText.setTypeface(Typeface.DEFAULT,Typeface.BOLD);nowBackButton=primaryIconBtn("Volver",R.drawable.pv_ic_back);nowBackButton.setTextSize(11);nowStopButton=iconBtn("Detener",R.drawable.pv_ic_close);nowStopButton.setTextSize(10);nowBar.addView(nowBarText,new LinearLayout.LayoutParams(0,dp(46),1));LinearLayout.LayoutParams nbp=new LinearLayout.LayoutParams(dp(88),dp(44));nbp.setMargins(dp(6),0,dp(4),0);nowBar.addView(nowBackButton,nbp);nowBar.addView(nowStopButton,new LinearLayout.LayoutParams(dp(82),dp(44)));nowBar.setVisibility(View.GONE);shell.addView(nowBar,new LinearLayout.LayoutParams(-1,dp(56)));nowBackButton.setOnClickListener(v->showCurrentChannelContext());nowStopButton.setOnClickListener(v->stopCurrentPlayback());
     setContentView(root);
   }
 
-  void setPage(String key,String label){page=key;if(screenTitle!=null)screenTitle.setText("home".equals(key)?"":label);boolean home="home".equals(key);if(homeButton!=null)homeButton.setVisibility(home?View.GONE:View.VISIBLE);if(exitButton!=null)exitButton.setVisibility(home?View.VISIBLE:View.GONE);clearContent();}
+  void captureLiveContext(){if(!"live".equals(page))return;lastLiveCategory=category==null?"Todos":category;if(search!=null)lastLiveQuery=search.getText().toString();if(channelList!=null&&channelList.getChildCount()>0){lastLivePosition=channelList.getFirstVisiblePosition();lastLiveTop=channelList.getChildAt(0).getTop();}}
+  void updateNowBar(){if(nowBar==null)return;boolean show=current!=null&&!"live".equals(page);nowBar.setVisibility(show?View.VISIBLE:View.GONE);if(show&&nowBarText!=null){String out=(activeTvMethod!=null&&!activeTvMethod.isEmpty())?" · TV conectado":"";nowBarText.setText("Ahora viendo · "+current.name+out);}}
+  void showCurrentChannelContext(){if(current==null){showLivePlayer(lastLiveCategory);return;}final String q=lastLiveQuery;final int pos=lastLivePosition,top=lastLiveTop;showLivePlayer(lastLiveCategory);if(search!=null&&!q.isEmpty())search.setText(q);if(channelList!=null)channelList.post(()->{try{channelList.setSelectionFromTop(Math.max(0,pos),top);}catch(Exception ignored){}});}
+  void stopCurrentPlayback(){try{if(player!=null)player.stop();}catch(Exception ignored){}current=null;previous=null;if(title!=null)title.setText("Selecciona un canal para comenzar");updateNowBar();if("live".equals(page))showLivePlayer(lastLiveCategory);}
+  void setPage(String key,String label){if("live".equals(page)&&!"live".equals(key))captureLiveContext();page=key;if(screenTitle!=null)screenTitle.setText("home".equals(key)?"":label);boolean home="home".equals(key);if(homeButton!=null)homeButton.setVisibility(home?View.GONE:View.VISIBLE);if(exitButton!=null)exitButton.setVisibility(home?View.VISIBLE:View.GONE);updateNowBar();clearContent();}
   GradientDrawable outlinePanel(){GradientDrawable d=new GradientDrawable();d.setColor(PV_SURFACE);d.setCornerRadius(dp(18));d.setStroke(dp(1),Color.argb(190,0,198,255));return d;}
   GradientDrawable glassCard(){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.argb(178,8,34,62),Color.argb(238,3,16,31)});d.setCornerRadius(dp(18));d.setStroke(dp(1),Color.argb(190,0,198,255));return d;}
   View categoryCard(String heading,String sub,int imageRes,Runnable action){boolean phone=getResources().getConfiguration().screenWidthDp<600;FrameLayout card=new FrameLayout(this);card.setBackground(glassCard());if(Build.VERSION.SDK_INT>=21)card.setClipToOutline(true);ImageView img=new ImageView(this);img.setImageResource(imageRes);img.setScaleType(ImageView.ScaleType.CENTER_CROP);boolean liveCard="Canales en vivo".equals(heading);if(liveCard){android.graphics.ColorMatrix m=new android.graphics.ColorMatrix();m.set(new float[]{1.35f,0,0,0,18,0,1.35f,0,0,18,0,0,1.35f,0,18,0,0,0,1,0});img.setColorFilter(new android.graphics.ColorMatrixColorFilter(m));}card.addView(img,new FrameLayout.LayoutParams(-1,-1));View overlay=new View(this);GradientDrawable gd=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.argb(liveCard?190:220,2,10,23),Color.argb(liveCard?90:110,2,10,23)});gd.setCornerRadius(dp(18));overlay.setBackground(gd);card.addView(overlay,new FrameLayout.LayoutParams(-1,-1));LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.BOTTOM);box.setPadding(dp(phone?12:18),dp(10),dp(phone?48:62),dp(phone?11:14));TextView h=tv(heading,phone?16:23,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);TextView d=tv(sub,phone?10:14,MUTED);d.setMaxLines(2);box.addView(h,new LinearLayout.LayoutParams(-1,-2));box.addView(d,new LinearLayout.LayoutParams(-1,-2));card.addView(box,new FrameLayout.LayoutParams(-1,-1));ImageView arrow=new ImageView(this);arrow.setImageResource(R.drawable.pv_ic_chevron);arrow.setPadding(dp(phone?8:12),dp(phone?8:12),dp(phone?8:12),dp(phone?8:12));arrow.setBackground(buttonBg(Color.argb(225,4,40,82),Color.argb(245,17,88,156),18));FrameLayout.LayoutParams ap=new FrameLayout.LayoutParams(dp(phone?36:50),dp(phone?36:50),Gravity.BOTTOM|Gravity.RIGHT);ap.setMargins(0,0,dp(10),dp(10));card.addView(arrow,ap);card.setClickable(true);card.setFocusable(true);card.setOnClickListener(v->action.run());card.setOnFocusChangeListener((v,f)->{v.setScaleX(f?1.02f:1f);v.setScaleY(f?1.02f:1f);});return card;}
