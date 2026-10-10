@@ -1,8 +1,8 @@
-name: PalmaVision v2.4.5 Music Controls CI
+name: PalmaVision v2.4.6 Final Polish CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main, build-palmavision-v240-vod-radio-recovery, build-palmavision-v242-radio-epg-fixes, build-palmavision-v243-consolidated-sources, build-palmavision-v244-ux-radio-logos, build-palmavision-v245-music-controls ]
+    branches: [ main, build-palmavision-v240-vod-radio-recovery, build-palmavision-v242-radio-epg-fixes, build-palmavision-v243-consolidated-sources, build-palmavision-v244-ux-radio-logos, build-palmavision-v245-music-controls, build-palmavision-v246-final-polish ]
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -24,8 +24,8 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1770
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionCode 245" app/build.gradle
-          grep -q "versionName '2.4.5'" app/build.gradle
+          grep -q "versionCode 246" app/build.gradle
+          grep -q "versionName '2.4.6'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -90,6 +90,13 @@ jobs:
           grep -q 'radioSourceIndex' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'nowPrevButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'nowNextButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/res/drawable/pv_ic_play.xml
+          test -s app/src/main/res/drawable/pv_ic_pause.xml
+          test -s app/src/main/res/drawable/pv_ic_stop.xml
+          grep -q 'R.drawable.pv_ic_play' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.pv_ic_pause' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'R.drawable.pv_ic_stop' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'secondaryControls.setOrientation(phone?LinearLayout.VERTICAL:LinearLayout.HORIZONTAL)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'Button doSearch=primaryIconBtn("Buscar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Buscar canal, país o categoría… · Enter' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'search.setImeOptions(EditorInfo.IME_ACTION_SEARCH)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -112,25 +119,25 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='245'"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.5'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='246'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.6'"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.4.5.apk
-          sha256sum PalmaVision_2.4.5.apk > PalmaVision_2.4.5.sha256.txt
+          cp "$APK" PalmaVision_2.4.6.apk
+          sha256sum PalmaVision_2.4.6.apk > PalmaVision_2.4.6.sha256.txt
       - name: Package source project
         run: |
           rm -rf app/build .gradle
-          zip -qr PalmaVision_2.4.5_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
+          zip -qr PalmaVision_2.4.6_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.5-release
+          name: PalmaVision-2.4.6-release
           path: |
-            PalmaVision_2.4.5.apk
-            PalmaVision_2.4.5.sha256.txt
+            PalmaVision_2.4.6.apk
+            PalmaVision_2.4.6.sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.5-project
-          path: PalmaVision_2.4.5_Project.zip
+          name: PalmaVision-2.4.6-project
+          path: PalmaVision_2.4.6_Project.zip
   emulator-smoke:
     needs: build-test
     runs-on: ubuntu-latest
