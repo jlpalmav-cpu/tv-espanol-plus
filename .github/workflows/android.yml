@@ -1,7 +1,7 @@
-name: PalmaVision v2.2.1 TV Output Fixes CI
+name: PalmaVision v2.2.2 Auto Connect CI
 on:
   push:
-    branches: [ build-palmavision-v221-tv-output-fixes ]
+    branches: [ build-palmavision-v222-auto-connect ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,13 +21,13 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionName '2.2.1'" app/build.gradle
+          grep -q "versionName '2.2.2'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.2.1 TV Output Fixes' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.2.2 Auto Connect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -118,9 +118,19 @@ jobs:
           grep -q 'DEFAULT_MEDIA_RECEIVER_APPLICATION_ID' app/src/main/java/com/epalma/tvespanolplus/CastOptionsProvider.java
           grep -q 'ACTION_CAST_SETTINGS' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'ACTION_WIFI_SETTINGS' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Mejores opciones disponibles' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'RECOMENDADO' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'scanTvOutputs(true)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Dispositivos encontrados' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Conexión automática' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'startAutoConnect' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'tryAutoMethod' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'tryCastAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'tryDlnaAuto' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'TvConnectPlanner.order' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Buscar otros TV / proyectores' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/TvConnectPlanner.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
+          grep -q 'remembersLastSuccessfulMethod' app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
+          grep -q 'wirelessIsAlwaysFallback' app/src/test/java/com/epalma/tvespanolplus/TvConnectPlannerTest.java
           grep -q 'discoverDlna' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'sendToDlna' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'M-SEARCH \* HTTP/1.1' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -130,12 +140,8 @@ jobs:
           grep -q 'miracastWinsWithoutInternet' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
           grep -q 'castWinsWithInternetAndFriendlyStream' app/src/test/java/com/epalma/tvespanolplus/TvOutputUtilTest.java
           grep -q 'Seleccionar canales a bloquear' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Pantalla inalámbrica / Miracast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Google Cast / Chromecast' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'DLNA / UPnP' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'currentCastSession()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'currentDlnaFriendly()' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Miracast no expuesto por este Android' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'TvOutputUtil.avTransportServiceType' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'TvOutputUtil.upnpError' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'dlnaStreamFriendly' app/src/main/java/com/epalma/tvespanolplus/TvOutputUtil.java
@@ -179,28 +185,28 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='221' versionName='2.2.1'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='222' versionName='2.2.2'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
-          sha256sum PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk > PalmaVision-v2.2.1-TV-OUTPUT-FIXES.sha256.txt
+          cp "$APK" PalmaVision-v2.2.2-AUTO-CONNECT.apk
+          sha256sum PalmaVision-v2.2.2-AUTO-CONNECT.apk > PalmaVision-v2.2.2-AUTO-CONNECT.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.2.1_TV_OUTPUT_FIXES_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.2.2_AUTO_CONNECT_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.1-TV-OUTPUT-FIXES-release
+          name: PalmaVision-v2.2.2-AUTO-CONNECT-release
           path: |
-            PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
-            PalmaVision-v2.2.1-TV-OUTPUT-FIXES.sha256.txt
+            PalmaVision-v2.2.2-AUTO-CONNECT.apk
+            PalmaVision-v2.2.2-AUTO-CONNECT.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.1-TV-OUTPUT-FIXES-project
-          path: PalmaVision_v2.2.1_TV_OUTPUT_FIXES_Project.zip
+          name: PalmaVision-v2.2.2-AUTO-CONNECT-project
+          path: PalmaVision_v2.2.2_AUTO_CONNECT_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -217,7 +223,7 @@ jobs:
             adb start-server
             adb wait-for-device
             adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r PalmaVision-v2.2.1-TV-OUTPUT-FIXES.apk
+            adb install -r PalmaVision-v2.2.2-AUTO-CONNECT.apk
             adb logcat -c
             python3 .github/ci/ui_smoke.py
             adb shell pidof com.epalma.tvespanolplus | tee pid.txt
