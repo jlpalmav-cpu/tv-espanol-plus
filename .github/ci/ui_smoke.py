@@ -15,9 +15,16 @@ def adb(*args, check=True):
     return sh("adb",*args,check=check)
 
 def dump():
-    adb("shell","uiautomator","dump","/data/local/tmp/pv-ui.xml")
-    adb("pull","/data/local/tmp/pv-ui.xml","pv-ui.xml")
-    return ET.parse("pv-ui.xml").getroot()
+    last=""
+    for _ in range(4):
+        out=adb("exec-out","uiautomator","dump","/dev/tty",check=False)
+        last=out
+        start=out.find("<?xml")
+        end=out.rfind("</hierarchy>")
+        if start>=0 and end>=start:
+            return ET.fromstring(out[start:end+12])
+        time.sleep(.7)
+    raise RuntimeError("uiautomator did not return XML: "+last[-500:])
 
 def text_nodes(needle):
     root=dump()
@@ -187,4 +194,4 @@ print("OK Wi-Fi selector opened")
 back()
 time.sleep(1)
 adb("logcat","-d","-t","2500")
-print("PALMAVISION v2.4.1 VOD + RADIO + RECOVERY UI SMOKE: PASS")
+print("PALMAVISION v2.4.2 RADIO + EPG EFFICIENCY UI SMOKE: PASS")
