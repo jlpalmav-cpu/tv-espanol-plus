@@ -1,7 +1,7 @@
-name: PalmaVision v2.2.6 EPG Fix CI
+name: PalmaVision v2.3.0 Hardening Persistence CI
 on:
   push:
-    branches: [ build-palmavision-v226-epg-fix ]
+    branches: [ build-palmavision-v230-hardening-persistence ]
   workflow_dispatch:
 jobs:
   build-test:
@@ -21,13 +21,12 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1733
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionName '2.2.6'" app/build.gradle
+          grep -q "versionName '2.3.0'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           ! grep -q 'PalmaVision · GitHub' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'TV Español+' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -q 'raw.githubusercontent.com' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Pantalla completa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q '2.2.6 EPG Fix' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '2.3.0 Hardening & Persistent Player' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Verificar canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'validateCurrent' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'controlBtn("Anterior"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -117,6 +116,30 @@ jobs:
           grep -q 'Actualizar guía' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'canales · "+nowCount+" ahora' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'sin EPG para este canal' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/EpgPolicyTest.java
+          grep -q 'SamsungTVPlus/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
+          grep -q 'PlutoTV/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
+          grep -q 'Plex/all.xml.gz' app/src/main/java/com/epalma/tvespanolplus/EpgPolicy.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/SecuritySanitizer.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/SecuritySanitizerTest.java
+          grep -q 'AndroidKeyStore' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'AES/GCM/NoPadding' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'xtream_pass_ct' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'putString("xtream_pass",' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'FLAG_SECURE' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'PBKDF2WithHmacSHA256' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q '120000' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'pin_locked_until' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Ahora viendo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showCurrentChannelContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'captureLiveContext' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'ChannelRowHolder' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Bitmap.createScaledBitmap' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'tvActuallyConnected' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'disconnectRemoteOnly' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'android:supportsPictureInPicture="true"' app/src/main/AndroidManifest.xml
+          grep -q 'onUserLeaveHint' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Enviar a TV / Proyector' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           ! grep -q 'String\[\] labs=.*Enviar a TV' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'if("cast".equals(page)){showLivePlayer(category);}' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -210,28 +233,28 @@ jobs:
           test -s "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee badging.txt
-          grep -q "package: name='com.epalma.tvespanolplus' versionCode='226' versionName='2.2.6'" badging.txt
+          grep -q "package: name='com.epalma.tvespanolplus' versionCode='230' versionName='2.3.0'" badging.txt
           $ANDROID_HOME/build-tools/35.0.0/aapt dump permissions "$APK" | tee permissions.txt
           grep -q "android.permission.INTERNET" permissions.txt
           grep -q "android.permission.ACCESS_NETWORK_STATE" permissions.txt
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" permissions.txt
           ! grep -Eq "android.permission.(CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|MANAGE_EXTERNAL_STORAGE)" permissions.txt
-          cp "$APK" PalmaVision-v2.2.6-EPG-FIX.apk
-          sha256sum PalmaVision-v2.2.6-EPG-FIX.apk > PalmaVision-v2.2.6-EPG-FIX.sha256.txt
+          cp "$APK" PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
+          sha256sum PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk > PalmaVision-v2.3.0-HARDENING-PERSISTENCE.sha256.txt
       - name: Package complete source project
         run: |
-          zip -r PalmaVision_v2.2.6_EPG_FIX_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
+          zip -r PalmaVision_v2.3.0_HARDENING_PERSISTENCE_Project.zip app build.gradle settings.gradle gradle.properties .github TV_Espanol_Plus_VERIFICADA.m3u branding -x "app/build/*"
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.6-EPG-FIX-release
+          name: PalmaVision-v2.3.0-HARDENING-PERSISTENCE-release
           path: |
-            PalmaVision-v2.2.6-EPG-FIX.apk
-            PalmaVision-v2.2.6-EPG-FIX.sha256.txt
+            PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
+            PalmaVision-v2.3.0-HARDENING-PERSISTENCE.sha256.txt
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-v2.2.6-EPG-FIX-project
-          path: PalmaVision_v2.2.6_EPG_FIX_Project.zip
+          name: PalmaVision-v2.3.0-HARDENING-PERSISTENCE-project
+          path: PalmaVision_v2.3.0_HARDENING_PERSISTENCE_Project.zip
           if-no-files-found: error
       - name: Android emulator install and launch smoke test
         uses: reactivecircus/android-emulator-runner@v2
@@ -248,7 +271,7 @@ jobs:
             adb start-server
             adb wait-for-device
             adb shell getprop sys.boot_completed | grep -q 1
-            adb install -r PalmaVision-v2.2.6-EPG-FIX.apk
+            adb install -r PalmaVision-v2.3.0-HARDENING-PERSISTENCE.apk
             adb logcat -c
             python3 .github/ci/ui_smoke.py
             adb shell pidof com.epalma.tvespanolplus | tee pid.txt
