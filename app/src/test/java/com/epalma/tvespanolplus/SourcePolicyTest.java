@@ -21,6 +21,8 @@ public class SourcePolicyTest {
     assertEquals(SourcePolicy.SERIES,SourcePolicy.classify(false,"Show S02E05","Series","http://x/5.ts"));
     assertEquals(SourcePolicy.MUSIC,SourcePolicy.classify(false,"Rock FM","Musica","http://x/live.mp3"));
     assertEquals(SourcePolicy.LIVE,SourcePolicy.classify(false,"Canal 5","Honduras","http://x/live.m3u8"));
+    assertEquals(SourcePolicy.MOVIE,SourcePolicy.classify(false,"Avatar","","http://x/movie/u/p/123.ts"));
+    assertEquals(SourcePolicy.SERIES,SourcePolicy.classify(false,"Episode 1","","http://x/series/u/p/456.ts"));
   }
   @Test public void systemListNeverGetsReclassified(){
     assertEquals(SourcePolicy.LIVE,SourcePolicy.classify(true,"Movie S01E01","Peliculas","http://x/test.mp4"));
