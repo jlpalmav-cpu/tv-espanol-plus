@@ -27,6 +27,15 @@ public final class CachePolicy {
     return 10000L;
   }
 
+  public static boolean isVerificationFresh(long lastVerifiedAt, long firstSeenAt, long now, int maxAgeDays) {
+    if (maxAgeDays <= 0) return true;
+    long anchor = lastVerifiedAt > 0 ? lastVerifiedAt : firstSeenAt;
+    if (anchor <= 0) return true;
+    long maxAge = Math.max(1L, maxAgeDays) * 24L * 60L * 60L * 1000L;
+    long age = Math.max(0L, now - anchor);
+    return age <= maxAge;
+  }
+
   public static String radioGenre(String language, String tags, String name) {
     String x = norm((tags == null ? "" : tags) + " " + (name == null ? "" : name));
     if (containsAny(x,"news","noticias","talk","sports","deportes","podcast","relig","sermon","politic","traffic","weather","weatheradio")) return null;
