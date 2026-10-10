@@ -1,0 +1,305 @@
+{
+  "schema": "palmaVision.sources.v1",
+  "version": "2026.10.10",
+  "region": "HN",
+  "language_policy": {
+    "accept_when": [
+      "native_spanish",
+      "spanish_audio",
+      "spanish_subtitles"
+    ],
+    "reject_when": [
+      "no_spanish_audio_and_no_spanish_subtitles"
+    ],
+    "note": "El idioma original puede ser cualquiera; cada título debe ofrecer audio o subtítulos en español."
+  },
+  "channels": {
+    "route": "channels",
+    "source_type": "embedded_m3u",
+    "asset": "TV_Espanol_Plus_VERIFICADA.m3u",
+    "current_verified_entries": 1733,
+    "rule": "Solo streams lineales/FAST. Cine y series lineales siguen siendo canales; VOD no se mezcla aquí."
+  },
+  "music": {
+    "route": "music",
+    "source_type": "radio_browser_dynamic",
+    "endpoint": "https://all.api.radio-browser.info/json/stations/search",
+    "languages": [
+      "spanish",
+      "english"
+    ],
+    "filters": [
+      "music_only",
+      "no_news",
+      "no_sports",
+      "no_talk",
+      "no_politics",
+      "no_podcasts"
+    ],
+    "playback": "internal_exoplayer_with_failover"
+  },
+  "providers": [
+    {
+      "id": "vix",
+      "name": "ViX Gratis",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported",
+      "language_status": "spanish_native",
+      "integration": "official_external",
+      "movies_url": "https://vix.com/",
+      "series_url": "https://vix.com/",
+      "note": "Plan gratis con anuncios."
+    },
+    {
+      "id": "pluto",
+      "name": "Pluto TV On Demand",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported_or_regional",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://pluto.tv/on-demand",
+      "series_url": "https://pluto.tv/on-demand",
+      "note": "VOD gratuito; disponibilidad por región."
+    },
+    {
+      "id": "plex",
+      "name": "Plex Free Movies & Shows",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "global_with_exceptions",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://watch.plex.tv/on-demand",
+      "series_url": "https://watch.plex.tv/on-demand",
+      "note": "Mostrar solo títulos con audio ES o subtítulos ES."
+    },
+    {
+      "id": "canela",
+      "name": "Canela.TV",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "latam_verify",
+      "language_status": "spanish_native",
+      "integration": "official_external",
+      "movies_url": "https://www.canela.tv/",
+      "series_url": "https://www.canela.tv/",
+      "note": "Gratis con anuncios; validar catálogo disponible en Honduras."
+    },
+    {
+      "id": "tubi",
+      "name": "Tubi",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "experimental_honduras_user_risk",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://tubitv.com/espanol/category/peliculas_en_espanol",
+      "series_url": "https://tubitv.com/category/spanish_language",
+      "note": "Incluido por solicitud del usuario; puede haber geobloqueo en Honduras."
+    },
+    {
+      "id": "runtime",
+      "name": "Runtime",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "verify_honduras",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://www.runtime.tv/",
+      "series_url": "https://www.runtime.tv/",
+      "note": "Gratis con anuncios; priorizar contenido español o subtitulado ES."
+    },
+    {
+      "id": "freetv",
+      "name": "FreeTV",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "verify_honduras",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://www.freetv.com/",
+      "series_url": "https://www.freetv.com/",
+      "note": "AVOD gratuito; validar título y región."
+    },
+    {
+      "id": "filmzie",
+      "name": "Filmzie",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "verify_honduras",
+      "language_status": "spanish_subtitles_available_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://filmzie.com/",
+      "series_url": "https://filmzie.com/",
+      "note": "Cine independiente; filtrar por subtítulos o audio ES."
+    },
+    {
+      "id": "viki",
+      "name": "Rakuten Viki",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "supported",
+      "language_status": "spanish_subtitles_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.viki.com/",
+      "series_url": "https://www.viki.com/",
+      "note": "Parte del catálogo es gratis con anuncios."
+    },
+    {
+      "id": "iqiyi",
+      "name": "iQIYI International",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international",
+      "language_status": "spanish_subtitles_or_dubs_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.iq.com/?lang=es_mx",
+      "series_url": "https://www.iq.com/?lang=es_mx",
+      "note": "Incluir solo títulos gratis y con ES."
+    },
+    {
+      "id": "tv5mondeplus",
+      "name": "TV5MONDEplus",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international",
+      "language_status": "spanish_subtitles_on_selected_titles",
+      "integration": "official_external",
+      "movies_url": "https://www.tv5mondeplus.com/es",
+      "series_url": "https://www.tv5mondeplus.com/es",
+      "note": "Catálogo francófono gratuito; filtrar subtítulos ES."
+    },
+    {
+      "id": "arte",
+      "name": "ARTE en español",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "global_partial",
+      "language_status": "spanish_version_or_subtitles",
+      "integration": "official_external",
+      "movies_url": "https://www.arte.tv/es/",
+      "series_url": "https://www.arte.tv/es/",
+      "note": "Algunos títulos tienen geobloqueo."
+    },
+    {
+      "id": "distrotv",
+      "name": "DistroTV",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international_verify",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://www.distro.tv/",
+      "series_url": "https://www.distro.tv/",
+      "note": "FAST + VOD gratuito; validar ES."
+    },
+    {
+      "id": "fawesome",
+      "name": "Fawesome",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "experimental_honduras",
+      "language_status": "filter_per_title",
+      "integration": "official_external",
+      "movies_url": "https://fawesome.tv/",
+      "series_url": "https://fawesome.tv/",
+      "note": "Mostrar solo si responde desde Honduras y cumple idioma."
+    },
+    {
+      "id": "retinalatina",
+      "name": "Retina Latina",
+      "types": [
+        "movies"
+      ],
+      "region_status": "latam_caribbean",
+      "language_status": "mostly_spanish",
+      "integration": "official_external",
+      "movies_url": "https://www.retinalatina.org/catalogo/",
+      "note": "Cine latinoamericano de acceso libre."
+    },
+    {
+      "id": "ondamedia",
+      "name": "OndaMedia · Fuera de Chile",
+      "types": [
+        "movies"
+      ],
+      "region_status": "international_subset",
+      "language_status": "mostly_spanish",
+      "integration": "official_external",
+      "movies_url": "https://ondamedia.cl/category/peliculas-para-ver-fuera-de-chile",
+      "note": "Usar solo colección habilitada fuera de Chile."
+    },
+    {
+      "id": "rtvcplay",
+      "name": "RTVCPlay · Sin geobloqueo",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "global_subset",
+      "language_status": "spanish_native",
+      "integration": "official_external",
+      "movies_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
+      "series_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
+      "note": "Usar contenido expresamente sin geobloqueo."
+    },
+    {
+      "id": "cinear",
+      "name": "CINE.AR Play",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "verify_honduras",
+      "language_status": "mostly_spanish",
+      "integration": "official_external",
+      "movies_url": "https://www.cine.ar/",
+      "series_url": "https://www.cine.ar/",
+      "note": "Validar disponibilidad internacional por título."
+    },
+    {
+      "id": "rtveplay",
+      "name": "RTVE Play",
+      "types": [
+        "movies",
+        "series"
+      ],
+      "region_status": "international_partial",
+      "language_status": "spanish_native_or_dubbed",
+      "integration": "official_external",
+      "movies_url": "https://www.rtve.es/play/videos/cine/",
+      "series_url": "https://www.rtve.es/play/series/",
+      "note": "Algunos títulos están restringidos por derechos."
+    }
+  ]
+}
