@@ -1,6 +1,6 @@
 {
   "schema": "palmaVision.sources.v1",
-  "version": "2026.10.10-r2",
+  "version": "2026.10.10-r3",
   "region": "HN",
   "language_policy": {
     "accept_when": [
@@ -216,22 +216,6 @@
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://arte.tv"
     },
     {
-      "id": "distrotv",
-      "name": "DistroTV",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "international_verify",
-      "language_status": "filter_per_title",
-      "integration": "official_external",
-      "movies_url": "https://www.distro.tv/",
-      "series_url": "https://www.distro.tv/",
-      "note": "FAST + VOD gratuito; validar ES.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://distro.tv"
-    },
-    {
       "id": "fawesome",
       "name": "Fawesome",
       "types": [
@@ -306,22 +290,6 @@
       "note": "Validar disponibilidad internacional por título.",
       "last_verified_at": "2026-10-10T06:00:00Z",
       "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://cine.ar"
-    },
-    {
-      "id": "rtveplay",
-      "name": "RTVE Play",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "international_partial",
-      "language_status": "spanish_native_or_dubbed",
-      "integration": "official_external",
-      "movies_url": "https://www.rtve.es/play/videos/cine/",
-      "series_url": "https://www.rtve.es/play/series/",
-      "note": "Algunos títulos están restringidos por derechos.",
-      "last_verified_at": "2026-10-10T06:00:00Z",
-      "logo_url": "https://www.google.com/s2/favicons?sz=128&domain_url=https://rtve.es"
     }
   ],
   "verification_policy": {
