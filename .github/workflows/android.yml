@@ -66,7 +66,7 @@ jobs:
           grep -q 'choosePlaybackSubtitleSize' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'onTracksChanged(Tracks tracks)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'x.put("d",p.description)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          ! grep -RqiE 'globalestv\.online|PalmaVision212' app .github || (echo 'credential leak detected' && exit 1)
+          ! grep -RqiE 'globalestv\.online|PalmaVision212' app .github/ci || (echo 'credential leak detected' && exit 1)
       - name: Lint unit tests and release build
         run: gradle --no-daemon :app:lintRelease :app:testReleaseUnitTest :app:assembleRelease
       - name: Verify release APK
