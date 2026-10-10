@@ -13,7 +13,7 @@ public class RadioStreamPolicyTest {
   @Test public void resolvesPlsAndM3uEntries(){
     assertEquals("https://stream.test/live.mp3",
       RadioStreamPolicy.firstPlayable("[playlist]\nFile1=https://stream.test/live.mp3\n","https://x.test/list.pls"));
-    assertEquals("https://x.test/audio/live.aac",
+    assertEquals("https://x.test/radio/audio/live.aac",
       RadioStreamPolicy.firstPlayable("#EXTM3U\naudio/live.aac\n","https://x.test/radio/list.m3u"));
   }
 
