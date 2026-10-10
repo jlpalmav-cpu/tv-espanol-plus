@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
   boolean radioCatalogLoading=false;
   String radioCatalogLanguage="";
   String activeSourceLabel="Lista principal", activeEpgLabel="Sin EPG", lastEpgUrl="", detectedPlaylistEpgUrl="", epgLastError="", pendingEpgUrl="", pendingEpgLabel="";
-  String preferredAudioLang="auto", preferredSubtitleLang="auto"; int preferredSubtitleSize=1;
+  String preferredAudioLang="auto", preferredSubtitleLang="auto"; int preferredSubtitleSize=1, verificationMaxDays=30;
   final ConcurrentHashMap<String,Program> currentPrograms=new ConcurrentHashMap<>();
   final ConcurrentHashMap<String,Health> channelHealth=new ConcurrentHashMap<>();
   final ConcurrentHashMap<String,List<Program>> programGuide=new ConcurrentHashMap<>();
@@ -406,17 +406,72 @@ public class MainActivity extends AppCompatActivity {
 
   void showBlockedChannels(){LinearLayout p=pageBase("Canales bloqueados","Toca un canal para desbloquearlo");ArrayList<Channel> data=new ArrayList<>();for(Channel ch:all)if(blockedChannels.contains(ch.id))data.add(ch);if(data.isEmpty()){TextView e=tv("No hay canales bloqueados manualmente.\n\nLos canales 18+ se protegen automáticamente cuando el control parental está activo.",14,MUTED);e.setGravity(Gravity.CENTER);p.addView(e,new LinearLayout.LayoutParams(-1,0,1));return;}ListView lv=new ListView(this);BaseAdapter a=new BaseAdapter(){public int getCount(){return data.size();}public Channel getItem(int i){return data.get(i);}public long getItemId(int i){return i;}public View getView(int i,View old,ViewGroup parent){return channelRow(getItem(i),false,old);}};lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));lv.setOnItemClickListener((x,v,pos,id)->{Channel ch=data.get(pos);blockedChannels.remove(ch.id);savePrefs();toast("Canal desbloqueado");showBlockedChannels();});}
 
+  SharedPreferences verificationPrefs(){return getSharedPreferences("pv_verification",MODE_PRIVATE);}
+  String verificationToken(String kind,String id){return kind+"_"+sha1(id==null?"":id);}
+  boolean verificationVisible(String kind,String id){
+    SharedPreferences p=verificationPrefs();String k=verificationToken(kind,id);
+    return CachePolicy.isVerificationFresh(p.getLong("ok_"+k,0L),p.getLong("seen_"+k,0L),System.currentTimeMillis(),verificationMaxDays);
+  }
+  void markSeen(String kind,String id){
+    if(id==null||id.isEmpty())return;SharedPreferences p=verificationPrefs();String k=verificationToken(kind,id);
+    if(!p.contains("seen_"+k))p.edit().putLong("seen_"+k,System.currentTimeMillis()).apply();
+  }
+  void markVerified(String kind,String id){
+    if(id==null||id.isEmpty())return;long now=System.currentTimeMillis();String k=verificationToken(kind,id);
+    verificationPrefs().edit().putLong("seen_"+k,now).putLong("ok_"+k,now).apply();
+  }
+  void noteCatalog(List<? extends Object> items,String kind,boolean verified){
+    SharedPreferences p=verificationPrefs();SharedPreferences.Editor e=p.edit();long now=System.currentTimeMillis();
+    for(Object item:items){
+      String id="";
+      if(item instanceof VodItem)id=((VodItem)item).id;else if(item instanceof RadioStation)id=((RadioStation)item).id;
+      if(id==null||id.isEmpty())continue;String k=verificationToken(kind,id);
+      if(!p.contains("seen_"+k))e.putLong("seen_"+k,now);
+      if(verified)e.putLong("ok_"+k,now);
+    }
+    e.apply();
+  }
+  void noteChannelCatalog(List<Channel> items){
+    SharedPreferences p=verificationPrefs();SharedPreferences.Editor e=p.edit();long now=System.currentTimeMillis();
+    for(Channel ch:items){
+      if(ch==null||ch.id==null||ch.id.isEmpty())continue;String k=verificationToken("channel",ch.id);
+      if(!p.contains("seen_"+k))e.putLong("seen_"+k,now);
+      long prior=p.getLong("ok_"+k,0L);
+      if(ch.sourceCheckedAt>prior)e.putLong("ok_"+k,ch.sourceCheckedAt);
+    }
+    e.apply();
+  }
+  int expiredCount(String kind,List<? extends Object> items){
+    int n=0;for(Object item:items){String id="";if(item instanceof VodItem)id=((VodItem)item).id;else if(item instanceof RadioStation)id=((RadioStation)item).id;if(!id.isEmpty()&&!verificationVisible(kind,id))n++;}return n;
+  }
+  int expiredChannelCount(){int n=0;for(Channel ch:all)if(!verificationVisible("channel",ch.id))n++;return n;}
+  void refreshVerificationFilters(){rebuildChannelIndex();if(adapter!=null)filter();filterVod(false);filterVod(true);filterRadio();if("livecats".equals(page))showLiveCategories();}
+
+  void showVerificationSettings(){
+    LinearLayout p=pageBase("Vigencia de fuentes","Oculta automáticamente elementos que llevan demasiado tiempo sin verificarse");
+    TextView info=tv("Nada se borra. Si un canal, película, serie o emisora vuelve a verificarse correctamente, reaparece automáticamente.",12,MUTED);
+    info.setPadding(dp(12),dp(10),dp(12),dp(10));info.setBackground(rounded(PV_SURFACE_2,12));p.addView(info,new LinearLayout.LayoutParams(-1,dp(72)));
+    Button age=menuCard("Tiempo máximo sin verificar",verificationMaxDays+" días",R.drawable.pv_ic_refresh);
+    LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,dp(68));ap.setMargins(0,dp(8),0,0);p.addView(age,ap);
+    int expiredMovies=expiredCount("movie",vodItems),expiredSeries=expiredCount("series",seriesItems),expiredRadio=expiredCount("radio",radioItems);
+    TextView state=tv("Ocultos ahora · Canales "+expiredChannelCount()+" · Películas "+expiredMovies+" · Series "+expiredSeries+" · Música "+expiredRadio,11,CYAN);
+    state.setPadding(dp(10),dp(6),dp(10),dp(6));p.addView(state,new LinearLayout.LayoutParams(-1,dp(48)));
+    age.setOnClickListener(v->{String[] labels={"1 día","3 días","7 días","15 días","30 días","60 días","90 días"};int[] values={1,3,7,15,30,60,90};
+      AlertDialog d=new AlertDialog.Builder(this).setTitle("Tiempo máximo sin verificar").setItems(labels,(x,w)->{verificationMaxDays=values[w];savePrefs();refreshVerificationFilters();showVerificationSettings();}).setNegativeButton("Cerrar",null).create();styleDialog(d);});
+  }
+
   void showSettings(){clearContent();LinearLayout page=pageBase("Configuración","PalmaVision v2.4.1 VOD · Radio · Recovery");
     Switch retry=new Switch(this);retry.setText("Reconexión automática");retry.setTextColor(Color.WHITE);retry.setChecked(autoRetryEnabled);retry.setBackground(rounded(PV_BUTTON,14));retry.setPadding(dp(12),0,dp(12),0);page.addView(retry,new LinearLayout.LayoutParams(-1,dp(58)));
     Button lists=menuCard("Fuentes de TV","Listas M3U, Xtream y configuración EPG",R.drawable.pv_ic_list),
+      verification=menuCard("Vigencia de fuentes","Ocultar después de "+verificationMaxDays+" días sin verificar",R.drawable.pv_ic_refresh),
       language=menuCard("Idioma y subtítulos","Audio · "+langLabel(preferredAudioLang)+" · Texto · "+langLabel(preferredSubtitleLang)+" · "+subtitleSizeLabel(preferredSubtitleSize),R.drawable.pv_ic_audio),
       parental=menuCard("Control parental",(parentalEnabled?"Activo":"Desactivado")+" · PIN y canales bloqueados",R.drawable.pv_ic_lock),
       screen=menuCard("Pantalla y formato","Pantalla completa · "+resizeModeName(),R.drawable.pv_ic_crop),
       diag=menuCard("Diagnóstico y seguridad","Estado de red, guía y permisos",R.drawable.pv_ic_info),
       about=menuCard("Acerca de PalmaVision","Versión y plataforma",R.drawable.pv_ic_info);
-    for(Button b:new Button[]{lists,language,parental,screen,diag,about}){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(62));p.setMargins(0,dp(5),0,0);page.addView(b,p);}
+    for(Button b:new Button[]{lists,verification,language,parental,screen,diag,about}){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(62));p.setMargins(0,dp(5),0,0);page.addView(b,p);}
 retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
-    lists.setOnClickListener(v->showLists());language.setOnClickListener(v->showLanguageSettings());parental.setOnClickListener(v->showParentalSettings());screen.setOnClickListener(v->openScreenSettings());diag.setOnClickListener(v->diagnostics());about.setOnClickListener(v->pvMessage("PalmaVision","Versión 2.4.1 VOD · Radio · Recovery\nMedia3 / ExoPlayer\nAndroid / Android TV\n\nDesign System unificado · motor LIVE estable"));
+    lists.setOnClickListener(v->showLists());verification.setOnClickListener(v->showVerificationSettings());language.setOnClickListener(v->showLanguageSettings());parental.setOnClickListener(v->showParentalSettings());screen.setOnClickListener(v->openScreenSettings());diag.setOnClickListener(v->diagnostics());about.setOnClickListener(v->pvMessage("PalmaVision","Versión 2.4.1 VOD · Radio · Recovery\nMedia3 / ExoPlayer\nAndroid / Android TV\n\nDesign System unificado · motor LIVE estable"));
   }
   void openScreenSettings(){LinearLayout p=pageBase("Pantalla y formato","Ajustes de reproducción");Button full=menuCard("Pantalla completa","Abre el contenido a pantalla completa",R.drawable.pv_ic_fullscreen),fit=menuCard("Formato · "+resizeModeName(),"Ajustar, llenar, estirar u original",R.drawable.pv_ic_crop);for(Button b:new Button[]{full,fit}){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(64));lp.setMargins(0,dp(6),0,dp(6));p.addView(b,lp);}full.setOnClickListener(v->openFullscreen());fit.setOnClickListener(v->{cycleResizeMode();openScreenSettings();});}
 
@@ -678,8 +733,8 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
   void setLoading(String s,String src){runOnUiThread(()->{if(count!=null)count.setText(s);if(sourceText!=null)sourceText.setText(src);});}
   void applyChannels(List<Channel> p,String label){runOnUiThread(()->{all.clear();all.addAll(p);channelHealth.clear();for(Channel ch:p)if(ch.score>=90)channelHealth.put(ch.id,new Health(HEALTH_VERIFIED,"Verificado",0,System.currentTimeMillis()));activeSourceLabel=label;rebuildChannelIndex();if(sourceText!=null)sourceText.setText(label);SharedPreferences sp=getSharedPreferences("tvplus",MODE_PRIVATE);String type=sp.getString("source_type",""),manualEpg=sp.getString("epg_url","");String epgToLoad="",epgLabel="";if(!pendingEpgUrl.isEmpty()){epgToLoad=pendingEpgUrl;epgLabel=pendingEpgLabel;pendingEpgUrl="";pendingEpgLabel="";}else if(!manualEpg.isEmpty()){epgToLoad=manualEpg;epgLabel="XMLTV";}else if(!"xtream".equals(type)&&!detectedPlaylistEpgUrl.isEmpty()){epgToLoad=detectedPlaylistEpgUrl;epgLabel="EPG de la lista";}if(!epgToLoad.isEmpty())loadXmltv(epgToLoad,epgLabel);if(adapter!=null)filter();if("livecats".equals(page))showLiveCategories();else if("countries".equals(page))showCountries();});}
 
-  void loadPrefs(){SharedPreferences p=getSharedPreferences("tvplus",MODE_PRIVATE);favorites.addAll(p.getStringSet("favorites",Collections.emptySet()));vodFavorites.addAll(p.getStringSet("vod_favorites",Collections.emptySet()));seriesFavorites.addAll(p.getStringSet("series_favorites",Collections.emptySet()));radioFavorites.addAll(p.getStringSet("radio_favorites",Collections.emptySet()));blockedChannels.addAll(p.getStringSet("blocked_channels",Collections.emptySet()));String r=p.getString("recents","");if(!r.isEmpty())for(String s:r.split("\\|"))if(!s.isEmpty())recents.add(s);String rr=p.getString("radio_recents","");if(!rr.isEmpty())for(String s:rr.split("\\|"))if(!s.isEmpty())radioRecents.add(s);autoRetryEnabled=p.getBoolean("auto_retry",true);resizeMode=p.getInt("resize_mode",0);preferredAudioLang=p.getString("preferred_audio","auto");preferredSubtitleLang=p.getString("preferred_subtitle","auto");preferredSubtitleSize=p.getInt("preferred_subtitle_size",1);parentalEnabled=p.getBoolean("parental_enabled",false);parentalPinHash=p.getString("parental_pin_hash","");pinFailures=p.getInt("pin_failures",0);pinLockedUntil=p.getLong("pin_locked_until",0L);}
-  void savePrefs(){getSharedPreferences("tvplus",MODE_PRIVATE).edit().putStringSet("favorites",new HashSet<>(favorites)).putStringSet("blocked_channels",new HashSet<>(blockedChannels)).putStringSet("vod_favorites",new HashSet<>(vodFavorites)).putStringSet("series_favorites",new HashSet<>(seriesFavorites)).putStringSet("radio_favorites",new HashSet<>(radioFavorites)).putString("recents",joinRecents()).putString("radio_recents",joinRadioRecents()).putBoolean("auto_retry",autoRetryEnabled).putInt("resize_mode",resizeMode).putString("preferred_audio",preferredAudioLang).putString("preferred_subtitle",preferredSubtitleLang).putInt("preferred_subtitle_size",preferredSubtitleSize).putBoolean("parental_enabled",parentalEnabled).putString("parental_pin_hash",parentalPinHash==null?"":parentalPinHash).putInt("pin_failures",pinFailures).putLong("pin_locked_until",pinLockedUntil).apply();}
+  void loadPrefs(){SharedPreferences p=getSharedPreferences("tvplus",MODE_PRIVATE);favorites.addAll(p.getStringSet("favorites",Collections.emptySet()));vodFavorites.addAll(p.getStringSet("vod_favorites",Collections.emptySet()));seriesFavorites.addAll(p.getStringSet("series_favorites",Collections.emptySet()));radioFavorites.addAll(p.getStringSet("radio_favorites",Collections.emptySet()));blockedChannels.addAll(p.getStringSet("blocked_channels",Collections.emptySet()));String r=p.getString("recents","");if(!r.isEmpty())for(String s:r.split("\\|"))if(!s.isEmpty())recents.add(s);String rr=p.getString("radio_recents","");if(!rr.isEmpty())for(String s:rr.split("\\|"))if(!s.isEmpty())radioRecents.add(s);autoRetryEnabled=p.getBoolean("auto_retry",true);resizeMode=p.getInt("resize_mode",0);preferredAudioLang=p.getString("preferred_audio","auto");preferredSubtitleLang=p.getString("preferred_subtitle","auto");preferredSubtitleSize=p.getInt("preferred_subtitle_size",1);verificationMaxDays=p.getInt("verification_max_days",30);parentalEnabled=p.getBoolean("parental_enabled",false);parentalPinHash=p.getString("parental_pin_hash","");pinFailures=p.getInt("pin_failures",0);pinLockedUntil=p.getLong("pin_locked_until",0L);}
+  void savePrefs(){getSharedPreferences("tvplus",MODE_PRIVATE).edit().putStringSet("favorites",new HashSet<>(favorites)).putStringSet("blocked_channels",new HashSet<>(blockedChannels)).putStringSet("vod_favorites",new HashSet<>(vodFavorites)).putStringSet("series_favorites",new HashSet<>(seriesFavorites)).putStringSet("radio_favorites",new HashSet<>(radioFavorites)).putString("recents",joinRecents()).putString("radio_recents",joinRadioRecents()).putBoolean("auto_retry",autoRetryEnabled).putInt("resize_mode",resizeMode).putString("preferred_audio",preferredAudioLang).putString("preferred_subtitle",preferredSubtitleLang).putInt("preferred_subtitle_size",preferredSubtitleSize).putInt("verification_max_days",verificationMaxDays).putBoolean("parental_enabled",parentalEnabled).putString("parental_pin_hash",parentalPinHash==null?"":parentalPinHash).putInt("pin_failures",pinFailures).putLong("pin_locked_until",pinLockedUntil).apply();}
   String joinRecents(){StringBuilder b=new StringBuilder();for(String id:recents){if(b.length()>0)b.append("|");b.append(id);}return b.toString();}
   String joinRadioRecents(){StringBuilder b=new StringBuilder();for(String id:radioRecents){if(b.length()>0)b.append("|");b.append(id);}return b.toString();}
   void addRadioRecent(String id){if(id==null||id.isEmpty())return;radioRecents.remove(id);radioRecents.addFirst(id);while(radioRecents.size()>30)radioRecents.removeLast();savePrefs();}
