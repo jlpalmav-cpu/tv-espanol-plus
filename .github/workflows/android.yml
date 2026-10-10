@@ -1,8 +1,8 @@
-name: PalmaVision v2.4.4 UX Radio Logos CI
+name: PalmaVision v2.4.5 Music Controls CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main, build-palmavision-v240-vod-radio-recovery, build-palmavision-v242-radio-epg-fixes, build-palmavision-v243-consolidated-sources, build-palmavision-v244-ux-radio-logos ]
+    branches: [ main, build-palmavision-v240-vod-radio-recovery, build-palmavision-v242-radio-epg-fixes, build-palmavision-v243-consolidated-sources, build-palmavision-v244-ux-radio-logos, build-palmavision-v245-music-controls ]
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -24,8 +24,8 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1770
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionCode 244" app/build.gradle
-          grep -q "versionName '2.4.4'" app/build.gradle
+          grep -q "versionCode 245" app/build.gradle
+          grep -q "versionName '2.4.5'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -75,6 +75,18 @@ jobs:
           grep -q 'setAudioAttributes(musicAudio,true)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'Versión 1.00' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'guideDateLong' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/RadioControlPolicy.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/RadioControlPolicyTest.java
+          grep -q 'toggleRadioPlayback' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'radioStep(-1)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'radioStep(1)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'toggleCurrentRadioFavorite' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'toggleRadioMute' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'manualRetryRadio' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'stopRadioPlayback' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'radioSourceIndex' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'nowPrevButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'nowNextButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q '"current_verified_entries": 1770' app/src/main/assets/PalmaVision_Consolidado.json
           grep -q 'Gratis On Demand' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showFreeVodProviders' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -94,25 +106,25 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='244'"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.4'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='245'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.5'"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.4.4.apk
-          sha256sum PalmaVision_2.4.4.apk > PalmaVision_2.4.4.sha256.txt
+          cp "$APK" PalmaVision_2.4.5.apk
+          sha256sum PalmaVision_2.4.5.apk > PalmaVision_2.4.5.sha256.txt
       - name: Package source project
         run: |
           rm -rf app/build .gradle
-          zip -qr PalmaVision_2.4.4_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
+          zip -qr PalmaVision_2.4.5_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.4-release
+          name: PalmaVision-2.4.5-release
           path: |
-            PalmaVision_2.4.4.apk
-            PalmaVision_2.4.4.sha256.txt
+            PalmaVision_2.4.5.apk
+            PalmaVision_2.4.5.sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.4-project
-          path: PalmaVision_2.4.4_Project.zip
+          name: PalmaVision-2.4.5-project
+          path: PalmaVision_2.4.5_Project.zip
   emulator-smoke:
     needs: build-test
     runs-on: ubuntu-latest
