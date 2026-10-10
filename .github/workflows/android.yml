@@ -70,6 +70,7 @@ jobs:
           ! grep -q '"id": "tubi"' app/src/main/assets/PalmaVision_Consolidado.json
           ! grep -q '"id": "rtveplay"' app/src/main/assets/PalmaVision_Consolidado.json
           ! grep -q '"id": "distrotv"' app/src/main/assets/PalmaVision_Consolidado.json
+          ! grep -q '"id": "rtvcplay"' app/src/main/assets/PalmaVision_Consolidado.json
           grep -q '"logo_url":' app/src/main/assets/PalmaVision_Consolidado.json
           test -s app/src/main/java/com/epalma/tvespanolplus/RadioStreamPolicy.java
           test -s app/src/test/java/com/epalma/tvespanolplus/RadioStreamPolicyTest.java
