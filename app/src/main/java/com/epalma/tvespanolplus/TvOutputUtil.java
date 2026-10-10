@@ -92,6 +92,10 @@ public final class TvOutputUtil {
     return m.find()?decodeXml(m.group(1).trim()):"";
   }
 
+  public static String transportState(String xml){
+    return tag(xml,"CurrentTransportState");
+  }
+
   public static String upnpError(String xml){
     String code=tag(xml,"errorCode");
     String desc=tag(xml,"errorDescription");
