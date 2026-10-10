@@ -1,4 +1,4 @@
-name: PalmaVision v2.4.9 Playlist Management CI
+name: PalmaVision v2.5.0 Multi-Source CI
 on:
   workflow_dispatch:
   push:
@@ -24,8 +24,8 @@ jobs:
           test "$(grep -c '^#EXTINF:' TV_Espanol_Plus_VERIFICADA.m3u)" -eq 1770
           test "$(grep -c 'tvg-logo=' TV_Espanol_Plus_VERIFICADA.m3u)" -ge 1700
           test "$(grep -c '<uses-permission' app/src/main/AndroidManifest.xml)" -eq 3
-          grep -q "versionCode 249" app/build.gradle
-          grep -q "versionName '2.4.9'" app/build.gradle
+          grep -q "versionCode 250" app/build.gradle
+          grep -q "versionName '2.5.0'" app/build.gradle
           grep -q 'android:label="PalmaVision"' app/src/main/AndroidManifest.xml
           grep -q 'R.drawable.pv_background_v209' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'R.drawable.pv_logo' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -48,7 +48,7 @@ jobs:
           grep -q 'restoreEpgCache' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q '5L\*24L\*60L\*60L\*1000L' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'currentStreamUrl' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
-          grep -q 'Radio · solo música' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'TextView h=tv("Música"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'String\[\] opts={"Español","English"}' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'radioFavorites' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'radioRecents' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -99,6 +99,17 @@ jobs:
           grep -q 'vodPlayButton=controlBtn("Pausa",R.drawable.pv_ic_pause)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'updateVodPlayButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'playlistGeneration' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/java/com/epalma/tvespanolplus/SourcePolicy.java
+          test -s app/src/test/java/com/epalma/tvespanolplus/SourcePolicyTest.java
+          grep -q 'PALMAVISION_ID="palmavision"' app/src/main/java/com/epalma/tvespanolplus/SourcePolicy.java
+          grep -q 'return !isProtected(id)' app/src/main/java/com/epalma/tvespanolplus/SourcePolicy.java
+          grep -q 'active_source_id' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'managed_sources_json' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Una sola lista activa' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'SourcePolicy.classify' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showMovies(){if(palmaVisionActive())' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'showSeries(){if(palmaVisionActive())' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'playDirectSeriesItem' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'PreparedChannels' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'loadFromUri(Uri uri,String label,Runnable commit)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'secondaryControls.setOrientation(phone?LinearLayout.VERTICAL:LinearLayout.HORIZONTAL)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
@@ -129,25 +140,25 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='249'"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.4.9'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionCode='250'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='2.5.0'"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.4.9.apk
-          sha256sum PalmaVision_2.4.9.apk > PalmaVision_2.4.9.sha256.txt
+          cp "$APK" PalmaVision_2.5.0.apk
+          sha256sum PalmaVision_2.5.0.apk > PalmaVision_2.5.0.sha256.txt
       - name: Package source project
         run: |
           rm -rf app/build .gradle
-          zip -qr PalmaVision_2.4.9_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
+          zip -qr PalmaVision_2.5.0_Project.zip app branding .github build.gradle settings.gradle gradle.properties TV_Espanol_Plus_VERIFICADA.m3u
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.9-release
+          name: PalmaVision-2.5.0-release
           path: |
-            PalmaVision_2.4.9.apk
-            PalmaVision_2.4.9.sha256.txt
+            PalmaVision_2.5.0.apk
+            PalmaVision_2.5.0.sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.4.9-project
-          path: PalmaVision_2.4.9_Project.zip
+          name: PalmaVision-2.5.0-project
+          path: PalmaVision_2.5.0_Project.zip
   emulator-smoke:
     needs: build-test
     runs-on: ubuntu-latest
@@ -179,4 +190,4 @@ jobs:
             adb shell am start -W -n com.epalma.tvespanolplus/.MainActivity
             sleep 10
             adb shell pidof com.epalma.tvespanolplus | grep -q .
-            adb shell dumpsys package com.epalma.tvespanolplus | grep -q 'versionName=2.4.8'
+            adb shell dumpsys package com.epalma.tvespanolplus | grep -q 'versionName=2.5.0'
