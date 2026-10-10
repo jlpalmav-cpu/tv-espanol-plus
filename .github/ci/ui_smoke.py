@@ -15,8 +15,8 @@ def adb(*args, check=True):
     return sh("adb",*args,check=check)
 
 def dump():
-    adb("shell","uiautomator","dump","/sdcard/pv-ui.xml")
-    adb("pull","/sdcard/pv-ui.xml","pv-ui.xml")
+    adb("shell","uiautomator","dump","/data/local/tmp/pv-ui.xml")
+    adb("pull","/data/local/tmp/pv-ui.xml","pv-ui.xml")
     return ET.parse("pv-ui.xml").getroot()
 
 def text_nodes(needle):
