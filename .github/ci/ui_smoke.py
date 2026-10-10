@@ -87,7 +87,7 @@ wait_text("Vista Doble")
 assert_no_text("Enviar a TV")
 wait_text("Salir")
 
-# New v2.4.0 libraries keep the approved shell and fail safely without credentials.
+# New v2.4.1 libraries keep the approved shell and fail safely without credentials.
 tap_text("Películas")
 wait_text("Conecta un servidor IPTV / Xtream")
 back()
@@ -187,4 +187,4 @@ print("OK Wi-Fi selector opened")
 back()
 time.sleep(1)
 adb("logcat","-d","-t","2500")
-print("PALMAVISION v2.4.0 VOD + RADIO + RECOVERY UI SMOKE: PASS")
+print("PALMAVISION v2.4.1 VOD + RADIO + RECOVERY UI SMOKE: PASS")
