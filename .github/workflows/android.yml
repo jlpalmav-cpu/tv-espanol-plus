@@ -87,6 +87,9 @@ jobs:
           grep -q 'radioSourceIndex' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'nowPrevButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'nowNextButton' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          ! grep -q 'Button doSearch=primaryIconBtn("Buscar"' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'Buscar canal, país o categoría… · Enter' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'search.setImeOptions(EditorInfo.IME_ACTION_SEARCH)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q '"current_verified_entries": 1770' app/src/main/assets/PalmaVision_Consolidado.json
           grep -q 'Gratis On Demand' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'showFreeVodProviders' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
