@@ -17,7 +17,7 @@
     "route": "channels",
     "source_type": "embedded_m3u",
     "asset": "TV_Espanol_Plus_VERIFICADA.m3u",
-    "current_verified_entries": 1733,
+    "current_verified_entries": 1770,
     "rule": "Solo streams lineales/FAST. Cine y series lineales siguen siendo canales; VOD no se mezcla aquí."
   },
   "music": {
@@ -51,7 +51,8 @@
       "integration": "official_external",
       "movies_url": "https://vix.com/",
       "series_url": "https://vix.com/",
-      "note": "Plan gratis con anuncios."
+      "note": "Plan gratis con anuncios.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "pluto",
@@ -65,7 +66,8 @@
       "integration": "official_external",
       "movies_url": "https://pluto.tv/on-demand",
       "series_url": "https://pluto.tv/on-demand",
-      "note": "VOD gratuito; disponibilidad por región."
+      "note": "VOD gratuito; disponibilidad por región.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "plex",
@@ -79,7 +81,8 @@
       "integration": "official_external",
       "movies_url": "https://watch.plex.tv/on-demand",
       "series_url": "https://watch.plex.tv/on-demand",
-      "note": "Mostrar solo títulos con audio ES o subtítulos ES."
+      "note": "Mostrar solo títulos con audio ES o subtítulos ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "canela",
@@ -93,7 +96,8 @@
       "integration": "official_external",
       "movies_url": "https://www.canela.tv/",
       "series_url": "https://www.canela.tv/",
-      "note": "Gratis con anuncios; validar catálogo disponible en Honduras."
+      "note": "Gratis con anuncios; validar catálogo disponible en Honduras.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "tubi",
@@ -107,7 +111,8 @@
       "integration": "official_external",
       "movies_url": "https://tubitv.com/espanol/category/peliculas_en_espanol",
       "series_url": "https://tubitv.com/category/spanish_language",
-      "note": "Incluido por solicitud del usuario; puede haber geobloqueo en Honduras."
+      "note": "Incluido por solicitud del usuario; puede haber geobloqueo en Honduras.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "runtime",
@@ -121,7 +126,8 @@
       "integration": "official_external",
       "movies_url": "https://www.runtime.tv/",
       "series_url": "https://www.runtime.tv/",
-      "note": "Gratis con anuncios; priorizar contenido español o subtitulado ES."
+      "note": "Gratis con anuncios; priorizar contenido español o subtitulado ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "freetv",
@@ -135,7 +141,8 @@
       "integration": "official_external",
       "movies_url": "https://www.freetv.com/",
       "series_url": "https://www.freetv.com/",
-      "note": "AVOD gratuito; validar título y región."
+      "note": "AVOD gratuito; validar título y región.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "filmzie",
@@ -149,7 +156,8 @@
       "integration": "official_external",
       "movies_url": "https://filmzie.com/",
       "series_url": "https://filmzie.com/",
-      "note": "Cine independiente; filtrar por subtítulos o audio ES."
+      "note": "Cine independiente; filtrar por subtítulos o audio ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "viki",
@@ -163,7 +171,8 @@
       "integration": "official_external",
       "movies_url": "https://www.viki.com/",
       "series_url": "https://www.viki.com/",
-      "note": "Parte del catálogo es gratis con anuncios."
+      "note": "Parte del catálogo es gratis con anuncios.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "iqiyi",
@@ -177,7 +186,8 @@
       "integration": "official_external",
       "movies_url": "https://www.iq.com/?lang=es_mx",
       "series_url": "https://www.iq.com/?lang=es_mx",
-      "note": "Incluir solo títulos gratis y con ES."
+      "note": "Incluir solo títulos gratis y con ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "tv5mondeplus",
@@ -191,7 +201,8 @@
       "integration": "official_external",
       "movies_url": "https://www.tv5mondeplus.com/es",
       "series_url": "https://www.tv5mondeplus.com/es",
-      "note": "Catálogo francófono gratuito; filtrar subtítulos ES."
+      "note": "Catálogo francófono gratuito; filtrar subtítulos ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "arte",
@@ -205,7 +216,8 @@
       "integration": "official_external",
       "movies_url": "https://www.arte.tv/es/",
       "series_url": "https://www.arte.tv/es/",
-      "note": "Algunos títulos tienen geobloqueo."
+      "note": "Algunos títulos tienen geobloqueo.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "distrotv",
@@ -219,7 +231,8 @@
       "integration": "official_external",
       "movies_url": "https://www.distro.tv/",
       "series_url": "https://www.distro.tv/",
-      "note": "FAST + VOD gratuito; validar ES."
+      "note": "FAST + VOD gratuito; validar ES.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "fawesome",
@@ -233,7 +246,8 @@
       "integration": "official_external",
       "movies_url": "https://fawesome.tv/",
       "series_url": "https://fawesome.tv/",
-      "note": "Mostrar solo si responde desde Honduras y cumple idioma."
+      "note": "Mostrar solo si responde desde Honduras y cumple idioma.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "retinalatina",
@@ -245,7 +259,8 @@
       "language_status": "mostly_spanish",
       "integration": "official_external",
       "movies_url": "https://www.retinalatina.org/catalogo/",
-      "note": "Cine latinoamericano de acceso libre."
+      "note": "Cine latinoamericano de acceso libre.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "ondamedia",
@@ -257,7 +272,8 @@
       "language_status": "mostly_spanish",
       "integration": "official_external",
       "movies_url": "https://ondamedia.cl/category/peliculas-para-ver-fuera-de-chile",
-      "note": "Usar solo colección habilitada fuera de Chile."
+      "note": "Usar solo colección habilitada fuera de Chile.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "rtvcplay",
@@ -271,7 +287,8 @@
       "integration": "official_external",
       "movies_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
       "series_url": "https://rtvcplay.co/contenidos-sin-geobloqueo",
-      "note": "Usar contenido expresamente sin geobloqueo."
+      "note": "Usar contenido expresamente sin geobloqueo.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "cinear",
@@ -285,7 +302,8 @@
       "integration": "official_external",
       "movies_url": "https://www.cine.ar/",
       "series_url": "https://www.cine.ar/",
-      "note": "Validar disponibilidad internacional por título."
+      "note": "Validar disponibilidad internacional por título.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
       "id": "rtveplay",
@@ -299,7 +317,23 @@
       "integration": "official_external",
       "movies_url": "https://www.rtve.es/play/videos/cine/",
       "series_url": "https://www.rtve.es/play/series/",
-      "note": "Algunos títulos están restringidos por derechos."
+      "note": "Algunos títulos están restringidos por derechos.",
+      "last_verified_at": "2026-10-10T06:00:00Z"
     }
-  ]
+  ],
+  "verification_policy": {
+    "setting_key": "verification_max_days",
+    "default_days": 30,
+    "options_days": [
+      1,
+      3,
+      7,
+      15,
+      30,
+      60,
+      90
+    ],
+    "behavior": "hide_not_delete",
+    "reappears_after_successful_verification": true
+  }
 }
