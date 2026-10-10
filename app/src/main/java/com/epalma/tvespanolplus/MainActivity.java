@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
   final LinkedHashSet<String> vodFavorites=new LinkedHashSet<>(), seriesFavorites=new LinkedHashSet<>(), radioFavorites=new LinkedHashSet<>();
   final ArrayDeque<String> radioRecents=new ArrayDeque<>();
   final ArrayList<RadioStation> radioItems=new ArrayList<>(), radioShown=new ArrayList<>();
+  final ArrayList<FreeProvider> freeProviders=new ArrayList<>(); boolean freeProvidersLoaded=false;
   String vodCategory="Todas", seriesCategory="Todas", vodQuery="", seriesQuery="", vodSort="Añadidos recientes", seriesSort="Añadidos recientes", radioLanguage="Español", radioGenre="Todos", radioQuery="";
   ExoPlayer vodPlayer, radioPlayer; PlayerView vodPlayerView; VodPlayback currentVod; RadioStation currentRadio; int vodRetries=0, radioRetries=0; long vodPendingResume=0L, vodLastSavedAt=0L; TextView vodStatus,vodClock,radioNowText; Runnable vodProgressTask; String vodReturn="movies", lastSeriesId="";
   final LinkedHashSet<String> favorites=new LinkedHashSet<>();
@@ -752,6 +753,8 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
     if("vodplayer".equals(page)){leaveVodPlayer();}
     else if("moviedetail".equals(page)){showMovies();}
     else if("seriesepisodes".equals(page)){showSeries();}
+    else if("freemovies".equals(page)){if(xtreamReady())showVodCatalog(false);else showHome();}
+    else if("freeseries".equals(page)){if(xtreamReady())showVodCatalog(true);else showHome();}
     else if("movies".equals(page)||"series".equals(page)||"radio".equals(page)){showHome();}
     else if("cast".equals(page)){showLivePlayer(category);}else if("dualpicker".equals(page)){showDualView();}else if("dual".equals(page)){showHome();}else if("schedule".equals(page)){showGuide();}else if("guide".equals(page)){showLivePlayer(category);}else if("live".equals(page)){showLiveCategories();}else if("countries".equals(page)){showLiveCategories();}else if("livecats".equals(page)){showHome();}else if(!"home".equals(page)){showHome();}else confirmExit();
   }
@@ -793,8 +796,57 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
   String providerCacheIdentity(String suffix){return safeCacheKey("catalog",xtreamServer()+"|"+xtreamUser()+"|"+suffix);}
 
   void showXtreamNeeded(String section){LinearLayout p=pageBase(section,"Conecta un servidor IPTV / Xtream para acceder a esta biblioteca");TextView t=tv("La TV en vivo sigue funcionando como hasta ahora. Para "+section.toLowerCase(Locale.ROOT)+" PalmaVision usa el catálogo VOD del servidor configurado.",14,Color.WHITE);t.setGravity(Gravity.CENTER);t.setPadding(dp(20),dp(25),dp(20),dp(25));p.addView(t,new LinearLayout.LayoutParams(-1,0,1));Button b=primaryIconBtn("Configurar servidor IPTV / Xtream",R.drawable.pv_ic_settings);p.addView(b,new LinearLayout.LayoutParams(-1,dp(56)));b.setOnClickListener(v->askXtream());}
-  void showMovies(){if(!xtreamReady()){showXtreamNeeded("Películas");return;}showVodCatalog(false);}
-  void showSeries(){if(!xtreamReady()){showXtreamNeeded("Series");return;}showVodCatalog(true);}
+  void ensureFreeProviders(){
+    if(freeProvidersLoaded)return;freeProvidersLoaded=true;
+    try{
+      String raw=readAll(getAssets().open("PalmaVision_Consolidado.json"));JSONObject root=new JSONObject(raw);JSONArray arr=root.optJSONArray("providers");if(arr==null)return;
+      SharedPreferences vp=verificationPrefs();SharedPreferences.Editor ve=vp.edit();long now=System.currentTimeMillis();
+      for(int i=0;i<arr.length();i++){
+        JSONObject o=arr.optJSONObject(i);if(o==null)continue;JSONArray types=o.optJSONArray("types");boolean movies=false,series=false;
+        if(types!=null)for(int j=0;j<types.length();j++){String t=types.optString(j,"");if("movies".equals(t))movies=true;if("series".equals(t))series=true;}
+        FreeProvider p=new FreeProvider(o.optString("id",""),o.optString("name",""),movies,series,o.optString("region_status",""),o.optString("language_status",""),o.optString("movies_url",""),o.optString("series_url",""),o.optString("note",""),parseSourceTime(o.optString("last_verified_at","")));
+        if(p.id.isEmpty()||p.name.isEmpty())continue;freeProviders.add(p);
+        for(String kind:new String[]{"provider_movie","provider_series"}){
+          if(("provider_movie".equals(kind)&&!movies)||("provider_series".equals(kind)&&!series))continue;
+          String k=verificationToken(kind,p.id);if(!vp.contains("seen_"+k))ve.putLong("seen_"+k,now);long prior=vp.getLong("ok_"+k,0L);if(p.lastVerifiedAt>prior)ve.putLong("ok_"+k,p.lastVerifiedAt);
+        }
+      }ve.apply();
+    }catch(Exception e){freeProvidersLoaded=false;}
+  }
+  List<FreeProvider> visibleFreeProviders(boolean series,String query){
+    ensureFreeProviders();ArrayList<FreeProvider> out=new ArrayList<>();String q=GuideSearch.normalize(query),kind=series?"provider_series":"provider_movie";
+    for(FreeProvider p:freeProviders){if(series&&!p.series)continue;if(!series&&!p.movies)continue;if(!verificationVisible(kind,p.id))continue;if(q.isEmpty()||p.search.contains(q))out.add(p);}
+    Collections.sort(out,(a,b)->a.name.compareToIgnoreCase(b.name));return out;
+  }
+  void openFreeProvider(FreeProvider p,boolean series){
+    String url=series?p.seriesUrl:p.moviesUrl;if(url==null||url.isEmpty()){toast("El proveedor no tiene enlace disponible");return;}
+    try{Intent i=new Intent(Intent.ACTION_VIEW,Uri.parse(url));startActivity(i);}catch(Exception e){toast("No se pudo abrir "+p.name);}
+  }
+  View freeProviderRow(FreeProvider p,boolean series){
+    LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.VERTICAL);row.setPadding(dp(12),dp(8),dp(12),dp(8));row.setBackground(rounded(PV_SURFACE_2,12));row.setFocusable(true);row.setClickable(true);
+    TextView n=tv(p.name,15,Color.WHITE);n.setTypeface(Typeface.DEFAULT,Typeface.BOLD);row.addView(n,new LinearLayout.LayoutParams(-1,dp(27)));
+    String region=p.regionStatus.contains("experimental")?"Experimental en Honduras":p.regionStatus.contains("supported")?"Disponible / soportado":p.regionStatus.contains("international")?"Internacional":"Verificación regional";
+    TextView m=tv(region+" · "+freeLanguageLabel(p.languageStatus),11,CYAN);m.setSingleLine(true);m.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(m,new LinearLayout.LayoutParams(-1,dp(23)));
+    TextView note=tv(p.note,10,MUTED);note.setSingleLine(true);note.setEllipsize(android.text.TextUtils.TruncateAt.END);row.addView(note,new LinearLayout.LayoutParams(-1,dp(21)));
+    row.setOnClickListener(v->openFreeProvider(p,series));return row;
+  }
+  String freeLanguageLabel(String s){String x=s==null?"":s.toLowerCase(Locale.ROOT);if(x.contains("spanish_native")||x.contains("mostly_spanish"))return "Español";if(x.contains("subtitles")||x.contains("dubs"))return "Audio ES / subtítulos ES según título";return "Filtrar audio o subtítulos ES";}
+  void showFreeVodProviders(boolean series){
+    setPage(series?"freeseries":"freemovies",series?"Series Gratis":"Películas Gratis");LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(9),dp(7),dp(9),dp(9));p.setBackground(outlinePanel());contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
+    TextView h=tv((series?"Series":"Películas")+" · Gratis On Demand",21,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);p.addView(h,new LinearLayout.LayoutParams(-1,dp(36)));
+    TextView sub=tv("Gratis o con anuncios · audio en español o subtítulos en español",11,CYAN);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(26)));
+    LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);EditText q=sourceField("Buscar proveedor…",false);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);top.addView(q,new LinearLayout.LayoutParams(0,dp(46),1));
+    if(xtreamReady()){Button mine=iconBtn("Mi catálogo",R.drawable.pv_ic_grid);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(120),dp(46));mp.setMargins(dp(6),0,0,0);top.addView(mine,mp);mine.setOnClickListener(v->showVodCatalog(series));}
+    p.addView(top,new LinearLayout.LayoutParams(-1,dp(48)));
+    TextView state=tv("",11,MUTED);p.addView(state,new LinearLayout.LayoutParams(-1,dp(28)));
+    ListView lv=new ListView(this);ArrayList<FreeProvider> data=new ArrayList<>();BaseAdapter a=new BaseAdapter(){public int getCount(){return data.size();}public FreeProvider getItem(int pos){return data.get(pos);}public long getItemId(int pos){return pos;}public View getView(int pos,View old,ViewGroup parent){return freeProviderRow(data.get(pos),series);}};
+    lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
+    Runnable refresh=()->{data.clear();data.addAll(visibleFreeProviders(series,q.getText().toString()));state.setText(data.size()+" proveedores gratuitos disponibles · vigencia "+verificationMaxDays+" días");a.notifyDataSetChanged();};
+    q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a1,int b,int cc){}public void onTextChanged(CharSequence s,int a1,int b,int cc){refresh.run();}public void afterTextChanged(android.text.Editable e){}});
+    refresh.run();
+  }
+  void showMovies(){if(!xtreamReady()){showFreeVodProviders(false);return;}showVodCatalog(false);}
+  void showSeries(){if(!xtreamReady()){showFreeVodProviders(true);return;}showVodCatalog(true);}
 
   void loadVodCatalog(boolean series){
     final String kind=series?"series":"vod", streamsKey=providerCacheIdentity(kind+"_streams"),catsKey=providerCacheIdentity(kind+"_categories");
@@ -810,7 +862,7 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
 
   void showVodCatalog(boolean series){String key=series?"series":"movies";setPage(key,series?"Series":"Películas");LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(8),dp(5),dp(8),dp(8));root.setBackground(outlinePanel());contentFrame.addView(root,new FrameLayout.LayoutParams(-1,-1));
     TextView h=tv(series?"Series":"Películas",22,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);root.addView(h,new LinearLayout.LayoutParams(-1,dp(34)));
-    TextView sub=tv(series?"Temporadas y episodios · progreso guardado":"VOD · favoritos · continuar viendo",11,CYAN);root.addView(sub,new LinearLayout.LayoutParams(-1,dp(24)));
+    TextView sub=tv(series?"Temporadas y episodios · progreso guardado":"VOD · favoritos · continuar viendo",11,CYAN);root.addView(sub,new LinearLayout.LayoutParams(-1,dp(24)));Button free=primaryIconBtn("Gratis On Demand",R.drawable.pv_ic_globe);LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(-1,dp(44));fp.setMargins(0,0,0,dp(4));root.addView(free,fp);free.setOnClickListener(v->showFreeVodProviders(series));
     LinearLayout tools=new LinearLayout(this);tools.setGravity(Gravity.CENTER_VERTICAL);EditText q=sourceField("Buscar título…",false);q.setText(series?seriesQuery:vodQuery);Button cat=iconBtn((series?seriesCategory:vodCategory),R.drawable.pv_ic_grid),sort=iconBtn("Ordenar",R.drawable.pv_ic_more);tools.addView(q,new LinearLayout.LayoutParams(0,dp(48),1));LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(dp(150),dp(48));cp.setMargins(dp(6),0,0,0);tools.addView(cat,cp);LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(dp(100),dp(48));sp.setMargins(dp(6),0,0,0);tools.addView(sort,sp);root.addView(tools,new LinearLayout.LayoutParams(-1,dp(50)));
     TextView state=tv("Cargando catálogo…",11,MUTED);state.setTag("vod_state");state.setPadding(dp(4),0,0,0);root.addView(state,new LinearLayout.LayoutParams(-1,dp(28)));
     GridView grid=new GridView(this);int sw=getResources().getConfiguration().screenWidthDp;grid.setNumColumns(sw<430?2:(sw<700?3:5));grid.setHorizontalSpacing(dp(7));grid.setVerticalSpacing(dp(8));grid.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);grid.setPadding(dp(2),dp(2),dp(2),dp(6));ArrayList<VodItem> data=series?seriesShown:vodShown;VodGridAdapter a=new VodGridAdapter(data,series);grid.setAdapter(a);grid.setTag(a);root.addView(grid,new LinearLayout.LayoutParams(-1,0,1));grid.setOnItemClickListener((p,v,pos,id)->{VodItem item=data.get(pos);if(series)showSeriesEpisodes(item);else showMovieDetail(item);});
@@ -1057,6 +1109,7 @@ retry.setOnCheckedChangeListener((v,on)->{autoRetryEnabled=on;savePrefs();});
   static final class SeriesEpisode{final String id,title,container,duration;final int season,episode;SeriesEpisode(String i,String t,String c,int s,int e,String d){id=i;title=t==null?"Episodio "+e:t;container=c==null?"mp4":c;season=s;episode=e;duration=d==null?"":d;}}
   static final class SeriesPayload{final ArrayList<SeriesEpisode> episodes=new ArrayList<>();String plot="";}
   static final class VodPlayback{final String kind,id,parentId,title,url,poster;final int season,episode;VodPlayback(String k,String i,String p,String t,String u,String po,int s,int e){kind=k;id=i;parentId=p==null?"":p;title=t;url=u;poster=po==null?"":po;season=s;episode=e;}}
+  static final class FreeProvider{final String id,name,regionStatus,languageStatus,moviesUrl,seriesUrl,note,search;final boolean movies,series;final long lastVerifiedAt;FreeProvider(String i,String n,boolean m,boolean s,String r,String l,String mu,String su,String no,long v){id=i;name=n;movies=m;series=s;regionStatus=r==null?"":r;languageStatus=l==null?"":l;moviesUrl=mu==null?"":mu;seriesUrl=su==null?"":su;note=no==null?"":no;lastVerifiedAt=v;search=GuideSearch.normalize(n+" "+r+" "+l+" "+no);}}
   static final class RadioStation{final String id,name,language,genre,url,logo,tags,country,search;final int bitrate,votes;final ArrayList<String> urls=new ArrayList<>();String track="";RadioStation(String i,String n,String l,String g,String u,String lo,String t,String c,int b,int v){id=i;name=n;language=l;genre=g;url=u;logo=lo==null?"":lo;tags=t==null?"":t;country=c==null?"":c;bitrate=b;votes=v;search=GuideSearch.normalize(n+" "+g+" "+tags+" "+country);addUrl(u);}void addUrl(String u){if(u!=null&&!u.isEmpty()&&(u.startsWith("http://")||u.startsWith("https://"))&&!urls.contains(u))urls.add(u);}String urlForRetry(int retry){if(urls.isEmpty())return url;return urls.get(Math.min(urls.size()-1,Math.max(0,retry)));}}
   static final class Program{final String title,description;final long start,stop;Program(String t,long s,long e){this(t,"",s,e);}Program(String t,String d,long s,long e){title=t;description=d==null?"":d;start=s;stop=e;}}
   static final class GuideHit{final Channel channel;final Program program;final int relevance;GuideHit(Channel c,Program p){this(c,p,0);}GuideHit(Channel c,Program p,int r){channel=c;program=p;relevance=r;}}
