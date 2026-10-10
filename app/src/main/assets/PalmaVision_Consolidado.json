@@ -1,6 +1,6 @@
 {
   "schema": "palmaVision.sources.v1",
-  "version": "2026.10.10",
+  "version": "2026.10.10-r2",
   "region": "HN",
   "language_policy": {
     "accept_when": [
@@ -97,21 +97,6 @@
       "movies_url": "https://www.canela.tv/",
       "series_url": "https://www.canela.tv/",
       "note": "Gratis con anuncios; validar catálogo disponible en Honduras.",
-      "last_verified_at": "2026-10-10T06:00:00Z"
-    },
-    {
-      "id": "tubi",
-      "name": "Tubi",
-      "types": [
-        "movies",
-        "series"
-      ],
-      "region_status": "experimental_honduras_user_risk",
-      "language_status": "filter_per_title",
-      "integration": "official_external",
-      "movies_url": "https://tubitv.com/espanol/category/peliculas_en_espanol",
-      "series_url": "https://tubitv.com/category/spanish_language",
-      "note": "Incluido por solicitud del usuario; puede haber geobloqueo en Honduras.",
       "last_verified_at": "2026-10-10T06:00:00Z"
     },
     {
