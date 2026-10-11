@@ -28,6 +28,14 @@ public class GuideSearchTest {
     assertFalse(GuideSearch.matches("FC Barcelona", "Inter vs Milan", "Serie A", "Fútbol Italia"));
   }
 
+  @Test public void findsPartialTeamName() {
+    assertTrue(GuideSearch.matches("Barcel", "FC Barcelona vs Getafe", "LaLiga", "Deportes"));
+  }
+
+  @Test public void ignoresChannelOnlyMatchesEvenForPartialName() {
+    assertFalse(GuideSearch.matches("Barcel", "Inter vs Milan", "Serie A", "Barcelona TV"));
+  }
+
   @Test public void ranksTitleAboveDescription() {
     assertTrue(GuideSearch.rank("Barcelona","FC Barcelona vs Getafe","LaLiga") >
                GuideSearch.rank("Barcelona","Previa","Noticias del FC Barcelona"));
