@@ -38,11 +38,13 @@ final class GuideSearch {
     String d = normalize(description);
     if (t.equals(q)) return 1200;
     if (!q.isEmpty() && t.contains(q)) return 1120;
+    if (tokenPrefixMatch(q, t)) return 1080;
     List<String> qt = usefulTokens(q);
     if (qt.isEmpty()) return -1;
     if (allExact(qt, t)) return 1040;
     if (allFuzzy(qt, t)) return 920;
     if (!d.isEmpty() && d.contains(q)) return 700;
+    if (tokenPrefixMatch(q, d)) return 680;
     if (allExact(qt, d)) return 640;
     if (allFuzzy(qt, d)) return 520;
     return -1;
@@ -57,6 +59,19 @@ final class GuideSearch {
       out.add(x);
     }
     return out;
+  }
+
+  private static boolean tokenPrefixMatch(String query, String haystack) {
+    List<String> qt = usefulTokens(query), hs = usefulTokens(haystack);
+    if (qt.isEmpty() || hs.isEmpty()) return false;
+    for (String q : qt) {
+      boolean ok = false;
+      for (String h : hs) {
+        if (h.equals(q) || (q.length() >= 4 && h.startsWith(q)) || (h.length() >= 4 && q.startsWith(h))) { ok = true; break; }
+      }
+      if (!ok) return false;
+    }
+    return true;
   }
 
   private static boolean allExact(List<String> queryTokens, String haystack) {
