@@ -18,7 +18,8 @@ jobs:
           echo "182ffb041d4e1bd729e779ffade77ae4eef38cc45924b880341684dc3cfe09ab  /tmp/PalmaVision_2.5.3.tar.xz" | sha256sum --check
           tar -xJf /tmp/PalmaVision_2.5.3.tar.xz -C .
           patch --batch -p1 --fuzz=0 < .palmavision-source/PalmaVision_253_UX.patch
-          echo '66817c47a5f944678ab184678fbbbf692b9590750bd6225d50f8f78506f5f0d3  app/src/main/java/com/epalma/tvespanolplus/MainActivity.java' | sha256sum --check
+          sed -i 's/setItems(f,(a,b)->{if(b==0)lang.performClick();else genre.performClick();})/setItems(f,(dialog,option)->{if(option==0)lang.performClick();else genre.performClick();})/' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          echo '6c3b8733b924e5b48c88fa2a287c50611a39bff75dffcd6276c92bf965480d98  app/src/main/java/com/epalma/tvespanolplus/MainActivity.java' | sha256sum --check
           test -s app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable-nodpi/pv_official_full.png
           grep -q "versionCode 253" app/build.gradle
