@@ -1,0 +1,56 @@
+name: Compilar PalmaVision 2.5.3 APK
+on:
+  push:
+    branches: [build-palmavision-v253-mobile-landscape]
+  workflow_dispatch:
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout seguro
+        uses: actions/checkout@v4
+      - name: Restaurar proyecto PalmaVision 2.5.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .palmavision-source/part-* | base64 -d > /tmp/PalmaVision_2.5.3.tar.xz
+          echo "182ffb041d4e1bd729e779ffade77ae4eef38cc45924b880341684dc3cfe09ab  /tmp/PalmaVision_2.5.3.tar.xz" | sha256sum --check
+          tar -xJf /tmp/PalmaVision_2.5.3.tar.xz -C .
+          test -s app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          test -s app/src/main/res/drawable-nodpi/pv_official_full.png
+          grep -q "versionCode 253" app/build.gradle
+          grep -q 'android:screenOrientation="landscape"' app/src/main/AndroidManifest.xml
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: SDK de Android
+        uses: android-actions/setup-android@v3
+      - name: Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: SDK plataforma 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compilar APK y pruebas unitarias
+        run: gradle --no-daemon --stacktrace :app:testReleaseUnitTest :app:assembleRelease
+      - name: Validar y preparar APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionCode='253'"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          cp "$APK" PalmaVision_2.5.3.apk
+          sha256sum PalmaVision_2.5.3.apk > PalmaVision_2.5.3.sha256.txt
+      - name: Publicar APK descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: PalmaVision-2.5.3-APK
+          path: |
+            PalmaVision_2.5.3.apk
+            PalmaVision_2.5.3.sha256.txt
+          retention-days: 30
