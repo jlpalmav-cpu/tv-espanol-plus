@@ -53,6 +53,18 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           cp "$APK" PalmaVision_2.5.3.apk
           sha256sum PalmaVision_2.5.3.apk > PalmaVision_2.5.3.sha256.txt
+      - name: Compilar variante independiente para conservar PalmaVision 2.5.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i "s/applicationId 'com.epalma.tvespanolplus'/applicationId 'com.epalma.tvespanolplus.prueba253'/" app/build.gradle
+          sed -i 's/android:label="PalmaVision"/android:label="PalmaVision Prueba"/' app/src/main/AndroidManifest.xml
+          gradle --no-daemon :app:assembleRelease
+          APK=app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.epalma.tvespanolplus.prueba253'"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          cp "$APK" PalmaVision_2.5.3_Prueba.apk
+          sha256sum PalmaVision_2.5.3_Prueba.apk > PalmaVision_2.5.3_Prueba.sha256.txt
       - name: Publicar APK descargable
         uses: actions/upload-artifact@v4
         with:
@@ -60,4 +72,6 @@ jobs:
           path: |
             PalmaVision_2.5.3.apk
             PalmaVision_2.5.3.sha256.txt
+            PalmaVision_2.5.3_Prueba.apk
+            PalmaVision_2.5.3_Prueba.sha256.txt
           retention-days: 30
