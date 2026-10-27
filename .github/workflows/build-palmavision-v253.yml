@@ -27,7 +27,7 @@ jobs:
           patch --batch -p1 --fuzz=0 < /tmp/PalmaVision_255.patch
           echo '24655a9237f9280ab17894228033ec007d373dea3de3dcf1e0ef3f18a948c97b  app/src/main/java/com/epalma/tvespanolplus/MainActivity.java' | sha256sum --check
           base64 -d < .palmavision-source/PalmaVision_256_Audit.patch.gz.b64 | gzip -d > /tmp/PalmaVision_256.patch
-          echo 'c29c24b57afae19405db7d0a5dddcdd6ef1366666972c2c8b65b00d4c1671c46  /tmp/PalmaVision_256.patch' | sha256sum --check
+          echo 'c858504a7ad7538264edfd3e6e6c83c538166d609b1d65309f3950ed10df8869  /tmp/PalmaVision_256.patch' | sha256sum --check
           patch --batch -p1 --fuzz=0 < /tmp/PalmaVision_256.patch
           grep -q 'searchFilterTask=()->{if("live".equals(page)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           grep -q 'current==scheduledChannel&&playToken==scheduledToken' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
