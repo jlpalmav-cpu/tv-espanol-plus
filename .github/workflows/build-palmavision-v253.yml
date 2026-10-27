@@ -1,7 +1,7 @@
-name: Compilar PalmaVision 2.5.5 IPTV UX
+name: Compilar PalmaVision 2.5.6 QA50
 on:
   push:
-    branches: [build-palmavision-v255-iptv-ux]
+    branches: [build-palmavision-v256-auditoria-50]
   workflow_dispatch:
 jobs:
   android-apk:
@@ -26,11 +26,18 @@ jobs:
           echo '42193f5a8192d15df4a0e095b685b73ecbd12ef2a16676b46c99ab29b3ddd5a9  /tmp/PalmaVision_255.patch' | sha256sum --check
           patch --batch -p1 --fuzz=0 < /tmp/PalmaVision_255.patch
           echo '24655a9237f9280ab17894228033ec007d373dea3de3dcf1e0ef3f18a948c97b  app/src/main/java/com/epalma/tvespanolplus/MainActivity.java' | sha256sum --check
+          base64 -d < .palmavision-source/PalmaVision_256_Audit.patch.gz.b64 | gzip -d > /tmp/PalmaVision_256.patch
+          echo 'c29c24b57afae19405db7d0a5dddcdd6ef1366666972c2c8b65b00d4c1671c46  /tmp/PalmaVision_256.patch' | sha256sum --check
+          patch --batch -p1 --fuzz=0 < /tmp/PalmaVision_256.patch
+          grep -q 'searchFilterTask=()->{if("live".equals(page)' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q 'current==scheduledChannel&&playToken==scheduledToken' app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+          grep -q "versionCode 256" app/build.gradle
+          grep -q "versionName '2.5.6'" app/build.gradle
           test -s app/src/test/java/com/epalma/tvespanolplus/IptvGesturePolicyTest.java
-          grep -q "versionName '2.5.5'" app/build.gradle
+          grep -q "versionName '2.5.6'" app/build.gradle
           test -s app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
           test -s app/src/main/res/drawable-nodpi/pv_official_full.png
-          grep -q "versionCode 255" app/build.gradle
+          grep -q "versionCode 256" app/build.gradle
           grep -q 'android:screenOrientation="landscape"' app/src/main/AndroidManifest.xml
       - name: Java 17
         uses: actions/setup-java@v4
@@ -62,27 +69,27 @@ jobs:
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "versionCode='255'"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.5.5.apk
-          sha256sum PalmaVision_2.5.5.apk > PalmaVision_2.5.5.sha256.txt
+          cp "$APK" PalmaVision_2.5.6.apk
+          sha256sum PalmaVision_2.5.6.apk > PalmaVision_2.5.6.sha256.txt
       - name: Compilar variante independiente para conservar PalmaVision 2.5.2
         shell: bash
         run: |
           set -euo pipefail
-          sed -i "s/applicationId 'com.epalma.tvespanolplus'/applicationId 'com.epalma.tvespanolplus.prueba255'/" app/build.gradle
+          sed -i "s/applicationId 'com.epalma.tvespanolplus'/applicationId 'com.epalma.tvespanolplus.prueba256'/" app/build.gradle
           sed -i 's/android:label="PalmaVision"/android:label="PalmaVision Prueba"/' app/src/main/AndroidManifest.xml
           gradle --no-daemon :app:assembleRelease
           APK=app/build/outputs/apk/release/app-release.apk
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.epalma.tvespanolplus.prueba255'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | grep -q "package: name='com.epalma.tvespanolplus.prueba256'"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
-          cp "$APK" PalmaVision_2.5.5_Prueba.apk
-          sha256sum PalmaVision_2.5.5_Prueba.apk > PalmaVision_2.5.5_Prueba.sha256.txt
+          cp "$APK" PalmaVision_2.5.6_Prueba.apk
+          sha256sum PalmaVision_2.5.6_Prueba.apk > PalmaVision_2.5.6_Prueba.sha256.txt
       - name: Publicar APK descargable
         uses: actions/upload-artifact@v4
         with:
-          name: PalmaVision-2.5.5-IPTV-UX-APK
+          name: PalmaVision-2.5.6-IPTV-UX-APK
           path: |
-            PalmaVision_2.5.5.apk
-            PalmaVision_2.5.5.sha256.txt
-            PalmaVision_2.5.5_Prueba.apk
-            PalmaVision_2.5.5_Prueba.sha256.txt
+            PalmaVision_2.5.6.apk
+            PalmaVision_2.5.6.sha256.txt
+            PalmaVision_2.5.6_Prueba.apk
+            PalmaVision_2.5.6_Prueba.sha256.txt
           retention-days: 30
