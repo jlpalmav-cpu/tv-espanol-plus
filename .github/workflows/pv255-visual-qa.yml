@@ -1,0 +1,44 @@
+name: PalmaVision 2.5.5 - QA visual móvil horizontal
+on:
+  push:
+    branches: [build-palmavision-v255-iptv-ux]
+    paths:
+      - .github/workflows/pv255-visual-qa.yml
+      - .github/ci/pv255_smoke.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  emulador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PalmaVision-2.5.5-IPTV-UX-APK
+          run-id: 40448233733
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Arranque, navegación táctil y capturas horizontal
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r PalmaVision_2.5.5.apk
+            python3 .github/ci/pv255_smoke.py
+      - name: Guardar pantallas para aceptación visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PalmaVision-2.5.5-capturas-ux
+          path: screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 14
