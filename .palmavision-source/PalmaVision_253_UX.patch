@@ -1,0 +1,353 @@
+--- a/app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
++++ b/app/src/main/java/com/epalma/tvespanolplus/MainActivity.java
+@@ -110,7 +110,7 @@
+   @Override public void onCreate(Bundle b){super.onCreate(b);setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);loadPrefs();buildShell();initPlayer();initCast();showHome();loadSavedSource();}
+ 
+   int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
+-  GradientDrawable rounded(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));d.setStroke(dp(1),Color.argb(165,26,157,255));return d;}
++  GradientDrawable rounded(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
+   StateListDrawable buttonBg(int normal,int pressed,int radius){StateListDrawable s=new StateListDrawable();s.addState(new int[]{android.R.attr.state_pressed},rounded(pressed,radius));s.addState(new int[]{android.R.attr.state_focused},rounded(pressed,radius));s.addState(new int[]{},rounded(normal,radius));return s;}
+   TextView tv(String s,int sp,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(sp);v.setTextColor(color);v.setGravity(Gravity.CENTER_VERTICAL);return v;}
+   Button btn(String s){return actionBtn(s,CARD);}
+@@ -128,24 +128,24 @@
+ 
+   // V2.5.3: teléfono táctil exclusivamente, landscape fijo; ninguna UI de TV.
+   void buildShell(){
+-    getWindow().setStatusBarColor(Color.BLACK);getWindow().setNavigationBarColor(Color.BLACK);
++    getWindow().setStatusBarColor(Color.BLACK);getWindow().setNavigationBarColor(Color.BLACK);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_FULLSCREEN);
+     FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Color.BLACK);
+     LinearLayout shell=new LinearLayout(this);shell.setOrientation(LinearLayout.VERTICAL);
+     shell.setPadding(dp(9),dp(2),dp(9),dp(3));root.addView(shell,new FrameLayout.LayoutParams(-1,-1));
+     shell.setOnApplyWindowInsetsListener((v,in)->{v.setPadding(dp(9)+in.getSystemWindowInsetLeft(),dp(2)+in.getSystemWindowInsetTop(),dp(9)+in.getSystemWindowInsetRight(),dp(3)+in.getSystemWindowInsetBottom());return in;});
+     LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);
+     ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.pv_official_header);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
+-    logo.setContentDescription("PalmaVision · logotipo oficial");top.addView(logo,new LinearLayout.LayoutParams(dp(172),dp(48)));
++    logo.setContentDescription("PalmaVision · logotipo oficial");top.addView(logo,new LinearLayout.LayoutParams(dp(157),dp(41)));
+     screenTitle=tv("",1,Color.TRANSPARENT);screenTitle.setVisibility(View.GONE);
+     sourceText=tv("",1,Color.TRANSPARENT);sourceText.setVisibility(View.GONE);
+-    TextView source=tv("● PalmaVision",11,CYAN);topSourceIndicator=source;source.setSingleLine(true);source.setEllipsize(android.text.TextUtils.TruncateAt.END);source.setPadding(dp(9),0,dp(4),0);
+-    source.setOnClickListener(v->showLists());top.addView(source,new LinearLayout.LayoutParams(dp(116),dp(48)));
++    TextView source=tv("▾ Fuentes",10,MUTED);topSourceIndicator=source;source.setSingleLine(true);source.setEllipsize(android.text.TextUtils.TruncateAt.END);source.setPadding(dp(4),0,dp(3),0);
++    source.setOnClickListener(v->showLists());top.addView(source,new LinearLayout.LayoutParams(dp(91),dp(41)));
+     top.addView(new Space(this),new LinearLayout.LayoutParams(0,dp(46),1));
+-    Button searchTop=topIcon("Buscar",R.drawable.pv_ic_search),guideTop=topIcon("Guía TV",R.drawable.pv_ic_news),netTop=topIcon("Analizar internet",R.drawable.pv_ic_globe),listTop=topIcon("Mis listas",R.drawable.pv_ic_list),settingsTop=topIcon("Configuración",R.drawable.pv_ic_settings);
+-    for(Button b:new Button[]{searchTop,guideTop,netTop,listTop,settingsTop}){LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(dp(50),dp(46));tp.setMargins(dp(3),0,0,0);top.addView(b,tp);}
+-    searchTop.setOnClickListener(v->openMobileSearch());guideTop.setOnClickListener(v->{category="Todos";showGuide();});netTop.setOnClickListener(v->showInternetDiagnostic());listTop.setOnClickListener(v->showLists());settingsTop.setOnClickListener(v->showSettings());
++    Button searchTop=topIcon("Buscar",R.drawable.pv_ic_search),netTop=topIcon("Analizar internet",R.drawable.pv_ic_globe),settingsTop=topIcon("Configuración",R.drawable.pv_ic_settings);
++    for(Button b:new Button[]{searchTop,netTop,settingsTop}){LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(dp(42),dp(40));tp.setMargins(dp(2),0,0,0);top.addView(b,tp);}
++    searchTop.setOnClickListener(v->openMobileSearch());netTop.setOnClickListener(v->showInternetDiagnostic());settingsTop.setOnClickListener(v->showSettings());
+     homeButton=null;exitButton=null;
+-    shell.addView(top,new LinearLayout.LayoutParams(-1,dp(50)));
++    shell.addView(top,new LinearLayout.LayoutParams(-1,dp(43)));
+     topCategories=new LinearLayout(this);topFilters=new LinearLayout(this);
+     shell.addView(topCategories,new LinearLayout.LayoutParams(-1,dp(0)));
+     shell.addView(topFilters,new LinearLayout.LayoutParams(-1,dp(0)));
+@@ -161,49 +161,61 @@
+     nowPrevButton.setOnClickListener(v->radioStep(-1));nowPlayButton.setOnClickListener(v->toggleRadioPlayback());nowNextButton.setOnClickListener(v->radioStep(1));
+     nowBackButton.setOnClickListener(v->returnToActiveMedia());nowStopButton.setOnClickListener(v->stopActiveMedia());
+     mainNav=new LinearLayout(this);mainNav.setGravity(Gravity.CENTER_VERTICAL);mainNav.setBackgroundColor(Color.BLACK);
+-    shell.addView(mainNav,new LinearLayout.LayoutParams(-1,dp(53)));
++    shell.addView(mainNav,new LinearLayout.LayoutParams(-1,dp(50)));
+     setContentView(root);renderBottomNavigation("home");
+   }
+ 
+-  Button topIcon(String desc,int res){Button b=mediaIconBtn(desc,res);b.setBackground(buttonBg(Color.argb(225,18,18,18),Color.argb(245,0,105,230),12));b.setContentDescription(desc);return b;}
++  Button topIcon(String desc,int res){Button b=mediaIconBtn(desc,res);b.setBackground(buttonBg(Color.BLACK,Color.rgb(34,34,34),10));b.setContentDescription(desc);return b;}
+   void renderBottomNavigation(String active){
+     if(mainNav==null)return;mainNav.removeAllViews();
+     final String[] labs={"Inicio","TV en vivo","Películas","Series","Música","Mi espacio"};
+     final int[] icons={R.drawable.pv_ic_grid,R.drawable.pv_ic_sports,R.drawable.pv_ic_movies,R.drawable.pv_ic_series,R.drawable.pv_ic_music,R.drawable.pv_ic_star};
+     final Runnable[] acts={this::showHome,this::showLive,this::showMovies,this::showSeries,this::showRadio,this::showMySpace};
+-    int activeIndex=0;if("live".equals(active)||"livecats".equals(active)||"countries".equals(active)||"guide".equals(active))activeIndex=1;
+-    else if(active.startsWith("movie")||active.equals("movies")||active.equals("vodplayer")&&"movies".equals(vodReturn))activeIndex=2;
+-    else if(active.startsWith("serie")||active.equals("vodplayer")&&"series".equals(vodReturn))activeIndex=3;
+-    else if(active.equals("radio"))activeIndex=4;else if(active.equals("continuar viendo")||active.equals("myspace")||active.equals("mi espacio")||active.equals("gestionar listas")||active.equals("configuración")||active.equals("lists")||active.equals("settings"))activeIndex=5;
++    int index=0;
++    if("live".equals(active)||"livecats".equals(active)||"countries".equals(active)||"guide".equals(active))index=1;
++    else if(active.startsWith("movie")||active.equals("freemovies")||active.equals("movies")||active.equals("vodplayer")&&"movies".equals(vodReturn))index=2;
++    else if(active.startsWith("serie")||active.equals("freeseries")||active.equals("vodplayer")&&"series".equals(vodReturn))index=3;
++    else if(active.equals("radio"))index=4;
++    else if(active.equals("myspace")||active.equals("mi espacio")||active.equals("gestionar listas")||active.equals("configuración")||active.equals("lists")||active.equals("settings"))index=5;
+     for(int i=0;i<labs.length;i++){
+-      final int idx=i;final boolean selected=i==activeIndex;
+-      Button b=dsButton(labs[i],0,selected,false);b.setTextSize(11);b.setMinHeight(dp(49));b.setMaxLines(1);b.setSingleLine(true);
+-      b.setBackground(selected?buttonBg(Color.argb(90,0,110,253),Color.argb(160,0,110,253),10):buttonBg(Color.BLACK,Color.rgb(25,25,25),10));
+-      b.setCompoundDrawables(null,null,null,null);setButtonIcon(b,icons[i],true);
+-      b.setTextColor(selected?CYAN:Color.WHITE);b.setOnClickListener(v->acts[idx].run());
+-      LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,dp(49),1);bp.setMargins(dp(2),dp(2),dp(2),dp(2));mainNav.addView(b,bp);
+-    }
+-  }
++      final int idx=i;final boolean selected=i==index;
++      LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setBackgroundColor(Color.BLACK);
++      Button b=dsButton(labs[i],0,false,false);b.setTextSize(10);b.setSingleLine(true);b.setMinHeight(dp(45));
++      b.setPadding(dp(1),0,dp(1),0);b.setTextColor(selected?ACCENT:Color.rgb(215,215,215));
++      b.setBackground(buttonBg(Color.BLACK,Color.rgb(24,24,24),8));
++      setButtonIcon(b,icons[i],true);b.setOnClickListener(v->acts[idx].run());
++      item.addView(b,new LinearLayout.LayoutParams(-1,dp(44)));
++      View line=new View(this);line.setBackgroundColor(selected?ACCENT:Color.TRANSPARENT);
++      LinearLayout.LayoutParams bar=new LinearLayout.LayoutParams(dp(34),dp(2));item.addView(line,bar);
++      LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(49),1);lp.setMargins(dp(1),0,dp(1),0);mainNav.addView(item,lp);
++    }
++  }
++
+   void renderCategoryRails(String key){
+     if(topCategories==null||topFilters==null)return;
+     topCategories.removeAllViews();topFilters.removeAllViews();
+     boolean live="live".equals(key)||"livecats".equals(key)||"countries".equals(key);
+-    if(!live){topCategories.setVisibility(View.GONE);topFilters.setVisibility(View.GONE);return;}
+-    topCategories.setVisibility(View.VISIBLE);topFilters.setVisibility("live".equals(key)?View.VISIBLE:View.GONE);
+-    LinearLayout chips=new LinearLayout(this);chips.setGravity(Gravity.CENTER_VERTICAL);
+-    HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);sc.setFillViewport(false);sc.addView(chips);
+-    topCategories.addView(sc,new LinearLayout.LayoutParams(-1,dp(45)));
++    topFilters.setVisibility(View.GONE);
++    if(!live){topCategories.setVisibility(View.GONE);return;}
++    topCategories.setVisibility(View.VISIBLE);
++    LinearLayout rail=new LinearLayout(this);rail.setGravity(Gravity.CENTER_VERTICAL);
++    HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);sc.addView(rail);
++    topCategories.addView(sc,new LinearLayout.LayoutParams(-1,dp(43)));
+     String[] cats={"Todos","Deportes","Noticias","Cine en vivo","Series en vivo","Música","Religiosos","Infantiles","Documentales","Entretenimiento"};
+-    for(String c:cats){Button b=railChip(c,c.equals(category));b.setOnClickListener(v->showLivePlayer(c));chips.addView(b,chipParams());}
+-    Button countries=railChip("Por país",false);countries.setOnClickListener(v->showCountries());chips.addView(countries,chipParams());
+-    LinearLayout filterChips=new LinearLayout(this);filterChips.setGravity(Gravity.CENTER_VERTICAL);
+-    HorizontalScrollView filters=new HorizontalScrollView(this);filters.setHorizontalScrollBarEnabled(false);filters.addView(filterChips);
+-    topFilters.addView(filters,new LinearLayout.LayoutParams(-1,dp(39)));
+-    String[] filterLabels={"Todos","Favoritos","Recientes","Disponibles","Sin señal"};String[] vals={"all","fav","recent","available","bad"};
+-    for(int i=0;i<filterLabels.length;i++){final String opt=vals[i];Button b=railChip(filterLabels[i],mode.equals(opt));b.setOnClickListener(v->{mode=opt;filter();renderCategoryRails("live");});filterChips.addView(b,chipParams());}
+-  }
+-  Button railChip(String label,boolean active){Button b=new Button(this);b.setText(label);b.setTextColor(active?CYAN:Color.WHITE);b.setTextSize(11);b.setSingleLine(true);b.setAllCaps(false);b.setMinHeight(dp(39));b.setMinimumWidth(dp(64));b.setPadding(dp(13),0,dp(13),0);b.setBackground(buttonBg(active?Color.rgb(9,48,86):Color.rgb(23,23,23),Color.rgb(6,82,147),19));return b;}
+-  LinearLayout.LayoutParams chipParams(){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,dp(38));lp.setMargins(dp(3),dp(1),dp(3),dp(1));return lp;}
++    for(String c:cats){Button b=railChip(c,c.equals(category));b.setOnClickListener(v->showLivePlayer(c));rail.addView(b,chipParams());}
++    Button filter=railChip("☷ Filtrar",!"all".equals(mode));filter.setOnClickListener(v->showLiveFilterSheet());rail.addView(filter,chipParams());
++  }
++  void showLiveFilterSheet(){
++    String[] labs={"Todos los canales","Favoritos","Recientes","Disponibles","Sin señal","Explorar por país"};
++    String[] opts={"all","fav","recent","available","bad","country"};
++    AlertDialog d=new AlertDialog.Builder(this).setTitle("Filtrar canales").setItems(labs,(dlg,w)->{
++      if("country".equals(opts[w])){showCountries();return;}
++      mode=opts[w];filter();renderCategoryRails("live");
++    }).setNegativeButton("Cerrar",null).create();styleDialog(d);
++  }
++  Button railChip(String label,boolean active){Button b=new Button(this);b.setText(label);b.setTextColor(active?Color.WHITE:MUTED);b.setTextSize(11);b.setSingleLine(true);b.setAllCaps(false);b.setMinHeight(dp(38));b.setMinimumWidth(dp(56));b.setPadding(dp(12),0,dp(12),0);b.setBackground(buttonBg(active?Color.rgb(0,105,225):Color.rgb(25,25,25),Color.rgb(35,83,135),18));return b;}
++  LinearLayout.LayoutParams chipParams(){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-2,dp(37));lp.setMargins(dp(3),dp(1),dp(3),dp(1));return lp;}
++
+   void openMobileSearch(){
+     final EditText e=sourceField("Buscar canales, películas, series...",false);
+     final String[] labels={"Canales TV","Películas","Series","Música"};
+@@ -280,33 +292,65 @@
+   }
+   void showCurrentChannelContext(){if(current==null){showLivePlayer(lastLiveCategory);return;}final String q=lastLiveQuery;final int pos=lastLivePosition,top=lastLiveTop;showLivePlayer(lastLiveCategory);if(search!=null&&!q.isEmpty())search.setText(q);if(channelList!=null)channelList.post(()->{try{channelList.setSelectionFromTop(Math.max(0,pos),top);}catch(Exception ignored){}});}
+   void stopCurrentPlayback(){try{if(player!=null)player.stop();}catch(Exception ignored){}current=null;previous=null;if(title!=null)title.setText("Selecciona un canal para comenzar");updateNowBar();if("live".equals(page))showLivePlayer(lastLiveCategory);}
+-  void setPage(String key,String label){if("live".equals(page)&&!"live".equals(key))captureLiveContext();page=key;if(topSourceIndicator!=null)topSourceIndicator.setText("● "+(palmaVisionActive()?"PalmaVision":activeSourceLabel));if(screenTitle!=null)screenTitle.setText("home".equals(key)?"":label);renderBottomNavigation(key);renderCategoryRails(key);if(topCategories!=null){android.view.ViewGroup.LayoutParams cp=topCategories.getLayoutParams();cp.height=topCategories.getVisibility()==View.VISIBLE?dp(45):0;topCategories.setLayoutParams(cp);}if(topFilters!=null){android.view.ViewGroup.LayoutParams fp=topFilters.getLayoutParams();fp.height=topFilters.getVisibility()==View.VISIBLE?dp(39):0;topFilters.setLayoutParams(fp);}updateNowBar();clearContent();}
+-  GradientDrawable outlinePanel(){GradientDrawable d=new GradientDrawable();d.setColor(PV_SURFACE);d.setCornerRadius(dp(18));d.setStroke(dp(1),Color.argb(190,0,198,255));return d;}
+-  GradientDrawable glassCard(){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.argb(178,8,34,62),Color.argb(238,3,16,31)});d.setCornerRadius(dp(18));d.setStroke(dp(1),Color.argb(190,0,198,255));return d;}
++  void setPage(String key,String label){if("live".equals(page)&&!"live".equals(key))captureLiveContext();page=key;if(topSourceIndicator!=null)topSourceIndicator.setText("▾ "+(palmaVisionActive()?"Fuentes":activeSourceLabel));if(screenTitle!=null)screenTitle.setText("home".equals(key)?"":label);renderBottomNavigation(key);renderCategoryRails(key);if(topCategories!=null){android.view.ViewGroup.LayoutParams cp=topCategories.getLayoutParams();cp.height=topCategories.getVisibility()==View.VISIBLE?dp(45):0;topCategories.setLayoutParams(cp);}if(topFilters!=null){android.view.ViewGroup.LayoutParams fp=topFilters.getLayoutParams();fp.height=topFilters.getVisibility()==View.VISIBLE?dp(39):0;topFilters.setLayoutParams(fp);}updateNowBar();clearContent();}
++  GradientDrawable outlinePanel(){GradientDrawable d=new GradientDrawable();d.setColor(Color.rgb(8,8,8));d.setCornerRadius(dp(13));return d;}
++  GradientDrawable glassCard(){GradientDrawable d=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{Color.rgb(22,22,22),Color.rgb(11,11,11)});d.setCornerRadius(dp(13));return d;}
+   View categoryCard(String heading,String sub,int imageRes,Runnable action){boolean phone=getResources().getConfiguration().screenWidthDp<600;FrameLayout card=new FrameLayout(this);card.setBackground(glassCard());if(Build.VERSION.SDK_INT>=21)card.setClipToOutline(true);ImageView img=new ImageView(this);img.setImageResource(imageRes);img.setScaleType(ImageView.ScaleType.CENTER_CROP);boolean liveCard="Canales en vivo".equals(heading);if(liveCard){android.graphics.ColorMatrix m=new android.graphics.ColorMatrix();m.set(new float[]{1.35f,0,0,0,18,0,1.35f,0,0,18,0,0,1.35f,0,18,0,0,0,1,0});img.setColorFilter(new android.graphics.ColorMatrixColorFilter(m));}card.addView(img,new FrameLayout.LayoutParams(-1,-1));View overlay=new View(this);GradientDrawable gd=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{Color.argb(liveCard?190:220,2,10,23),Color.argb(liveCard?90:110,2,10,23)});gd.setCornerRadius(dp(18));overlay.setBackground(gd);card.addView(overlay,new FrameLayout.LayoutParams(-1,-1));LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setGravity(Gravity.BOTTOM);box.setPadding(dp(phone?12:18),dp(10),dp(phone?48:62),dp(phone?11:14));TextView h=tv(heading,phone?16:23,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);TextView d=tv(sub,phone?10:14,MUTED);d.setMaxLines(2);box.addView(h,new LinearLayout.LayoutParams(-1,-2));box.addView(d,new LinearLayout.LayoutParams(-1,-2));card.addView(box,new FrameLayout.LayoutParams(-1,-1));ImageView arrow=new ImageView(this);arrow.setImageResource(R.drawable.pv_ic_chevron);arrow.setPadding(dp(phone?8:12),dp(phone?8:12),dp(phone?8:12),dp(phone?8:12));arrow.setBackground(buttonBg(Color.argb(225,4,40,82),Color.argb(245,17,88,156),18));FrameLayout.LayoutParams ap=new FrameLayout.LayoutParams(dp(phone?36:50),dp(phone?36:50),Gravity.BOTTOM|Gravity.RIGHT);ap.setMargins(0,0,dp(10),dp(10));card.addView(arrow,ap);card.setClickable(true);card.setFocusable(true);card.setOnClickListener(v->action.run());card.setOnFocusChangeListener((v,f)->{v.setScaleX(f?1.02f:1f);v.setScaleY(f?1.02f:1f);});return card;}
+ 
+   void clearContent(){if("live".equals(page))captureLiveContext();contentFrame.removeAllViews();}
+   void showHome(){
+     setPage("home","Inicio");
+-    ScrollView scroll=new ScrollView(this);scroll.setVerticalScrollBarEnabled(false);contentFrame.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
+-    LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(8),dp(5),dp(8),dp(10));scroll.addView(panel,new ScrollView.LayoutParams(-1,-2));
+-    TextView greeting=tv("Explorar PalmaVision",18,Color.WHITE);greeting.setTypeface(Typeface.DEFAULT,Typeface.BOLD);panel.addView(greeting,new LinearLayout.LayoutParams(-1,dp(32)));
+-    TextView sources=tv("Fuente activa: "+(activeSourceLabel==null?"PalmaVision":activeSourceLabel)+"   ·   Toca una sección para explorar su contenido",11,MUTED);
+-    panel.addView(sources,new LinearLayout.LayoutParams(-1,dp(22)));
+-    LinearLayout hero=new LinearLayout(this);hero.setOrientation(LinearLayout.HORIZONTAL);
+-    View live=categoryCard("TV en vivo","Explorar canales · EPG · países",R.drawable.home_live,this::showLive);
+-    View movies=categoryCard("Películas",palmaVisionActive()?"Plataformas gratuitas":"Catálogo de mi lista externa",R.drawable.home_movies,this::showMovies);
+-    View series=categoryCard("Series",palmaVisionActive()?"Plataformas gratuitas":"Temporadas y episodios",R.drawable.home_series,this::showSeries);
+-    View music=categoryCard("Radio y música","Emisoras · géneros · favoritos",R.drawable.home_music,this::showRadio);
+-    for(View card:new View[]{live,movies,series,music}){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(138),1);lp.setMargins(dp(4),dp(4),dp(4),dp(4));hero.addView(card,lp);}
+-    panel.addView(hero,new LinearLayout.LayoutParams(-1,dp(146)));
+-    TextView more=tv("Accesos rápidos",14,Color.WHITE);more.setTypeface(Typeface.DEFAULT,Typeface.BOLD);panel.addView(more,new LinearLayout.LayoutParams(-1,dp(30)));
+-    LinearLayout quick=new LinearLayout(this);quick.setGravity(Gravity.CENTER_VERTICAL);
+-    String[] labs={"Guía EPG","Favoritos","Recientes","Mis listas","Vista doble","Analizar internet"};
+-    int[] icons={R.drawable.pv_ic_news,R.drawable.pv_ic_star,R.drawable.pv_ic_history,R.drawable.pv_ic_list,R.drawable.pv_ic_dual,R.drawable.pv_ic_globe};
+-    Runnable[] acts={()->{category="Todos";showGuide();},()->showSavedPage("Favoritos",true),()->showSavedPage("Recientes",false),this::showLists,this::showDualView,this::showInternetDiagnostic};
+-    for(int i=0;i<labs.length;i++){final Runnable action=acts[i];Button b=iconBtn(labs[i],icons[i]);b.setTextSize(10);LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,dp(47),1);bp.setMargins(dp(3),0,dp(3),0);quick.addView(b,bp);b.setOnClickListener(v->action.run());}
+-    panel.addView(quick,new LinearLayout.LayoutParams(-1,dp(50)));
++    ScrollView scroll=new ScrollView(this);scroll.setVerticalScrollBarEnabled(false);
++    contentFrame.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
++    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(8),dp(4),dp(8),dp(8));
++    scroll.addView(p,new ScrollView.LayoutParams(-1,-2));
++    FrameLayout hero=new FrameLayout(this);hero.setBackground(rounded(Color.rgb(18,18,18),12));hero.setClipToOutline(true);
++    ImageView cover=new ImageView(this);cover.setImageResource(R.drawable.home_live);cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
++    hero.addView(cover,new FrameLayout.LayoutParams(-1,-1));
++    View shade=new View(this);shade.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
++      new int[]{Color.argb(250,0,0,0),Color.argb(192,0,0,0),Color.argb(15,0,0,0)}));
++    hero.addView(shade,new FrameLayout.LayoutParams(-1,-1));
++    LinearLayout bl=new LinearLayout(this);bl.setOrientation(LinearLayout.VERTICAL);bl.setGravity(Gravity.CENTER_VERTICAL);bl.setPadding(dp(14),0,dp(8),0);
++    TextView tag=tv("PALMAVISION  •  EN DIRECTO",10,ACCENT);bl.addView(tag,new LinearLayout.LayoutParams(-1,dp(20)));
++    TextView heading=tv("Descubrí qué ver hoy",20,Color.WHITE);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);bl.addView(heading,new LinearLayout.LayoutParams(-1,dp(29)));
++    TextView desc=tv("Tus canales y contenidos en un solo lugar",11,Color.rgb(220,220,220));bl.addView(desc,new LinearLayout.LayoutParams(-1,dp(20)));
++    Button live=primaryIconBtn("Ver TV en vivo",R.drawable.pv_ic_play);LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(dp(152),dp(37));bp.topMargin=dp(3);bl.addView(live,bp);live.setOnClickListener(v->showLive());
++    hero.addView(bl,new FrameLayout.LayoutParams(-1,-1));p.addView(hero,new LinearLayout.LayoutParams(-1,dp(getResources().getConfiguration().screenHeightDp<410?98:135)));
++    LinearLayout section=homeSectionHeader("En vivo ahora",this::showLive);p.addView(section,new LinearLayout.LayoutParams(-1,dp(32)));
++    HorizontalScrollView sc=new HorizontalScrollView(this);sc.setHorizontalScrollBarEnabled(false);
++    LinearLayout rail=new LinearLayout(this);rail.setOrientation(LinearLayout.HORIZONTAL);rail.setGravity(Gravity.CENTER_VERTICAL);
++    sc.addView(rail);p.addView(sc,new LinearLayout.LayoutParams(-1,dp(getResources().getConfiguration().screenHeightDp<410?92:116)));
++    List<Channel> source=activeChannels.isEmpty()?all:activeChannels;
++    if(source.isEmpty()){
++      TextView loading=tv("Cargando canales…",12,MUTED);rail.addView(loading,new LinearLayout.LayoutParams(dp(220),dp(80)));
++    }else{
++      int limit=Math.min(15,source.size());
++      for(int i=0;i<limit;i++){Channel c=source.get(i);rail.addView(homeChannelCard(c),new LinearLayout.LayoutParams(dp(137),dp(105)));}
++    }
++    p.addView(homeSectionHeader("Tu biblioteca",this::showMySpace),new LinearLayout.LayoutParams(-1,dp(32)));
++    LinearLayout shortcuts=new LinearLayout(this);
++    String[] labs={"Continuar viendo","Favoritos","Guía de TV","Mis listas"};
++    int[] pics={R.drawable.pv_ic_play,R.drawable.pv_ic_star,R.drawable.pv_ic_news,R.drawable.pv_ic_list};
++    Runnable[] acts={this::showContinueWatching,()->showSavedPage("Favoritos",true),()->{category="Todos";showGuide();},this::showLists};
++    for(int i=0;i<labs.length;i++){
++      final Runnable act=acts[i];Button b=iconBtn(labs[i],pics[i]);b.setTextSize(11);b.setBackground(buttonBg(Color.rgb(23,23,23),Color.rgb(34,61,87),10));
++      LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(42),1);lp.setMargins(dp(3),0,dp(3),0);shortcuts.addView(b,lp);b.setOnClickListener(v->act.run());
++    }
++    p.addView(shortcuts,new LinearLayout.LayoutParams(-1,dp(44)));
++  }
++  LinearLayout homeSectionHeader(String label,Runnable action){
++    LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
++    TextView title=tv(label,14,Color.WHITE);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);row.addView(title,new LinearLayout.LayoutParams(0,-1,1));
++    TextView more=tv("Ver todo ›",11,ACCENT);more.setGravity(Gravity.CENTER);more.setPadding(dp(8),0,dp(8),0);more.setOnClickListener(v->action.run());row.addView(more,new LinearLayout.LayoutParams(dp(85),-1));return row;
++  }
++  View homeChannelCard(Channel c){
++    LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setBackground(rounded(Color.rgb(22,22,22),10));
++    LinearLayout.LayoutParams pad=new LinearLayout.LayoutParams(-1,dp(78));
++    ImageView logo=new ImageView(this);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);logo.setPadding(dp(14),dp(7),dp(14),dp(7));box.addView(logo,pad);bindLogo(logo,c);
++    TextView label=tv(c.name,11,Color.WHITE);label.setSingleLine(true);label.setEllipsize(android.text.TextUtils.TruncateAt.END);label.setGravity(Gravity.CENTER);label.setPadding(dp(4),0,dp(4),0);box.addView(label,new LinearLayout.LayoutParams(-1,dp(23)));
++    LinearLayout.LayoutParams margins=new LinearLayout.LayoutParams(dp(130),dp(104));margins.setMargins(dp(3),0,dp(3),0);
++    FrameLayout wrap=new FrameLayout(this);wrap.addView(box,new FrameLayout.LayoutParams(-1,-1));wrap.setOnClickListener(v->{showLivePlayer(canonicalCategory(c));play(c);});
++    return wrap;
+   }
+ 
+   int countCategory(String cat){List<Channel> b=baseForCategory(cat);return b==null?0:b.size();}
+@@ -429,8 +473,14 @@
+     attachMainPlayer();
+     if(current==null){LinearLayout empty=new LinearLayout(this);empty.setOrientation(LinearLayout.VERTICAL);empty.setGravity(Gravity.CENTER);ImageView mark=new ImageView(this);mark.setImageResource(com.epalma.tvespanolplus.R.drawable.pv_official_icon);mark.setAlpha(.82f);empty.addView(mark,new LinearLayout.LayoutParams(dp(84),dp(84)));TextView msg=tv("PalmaVision\nElige un canal en vivo",14,Color.WHITE);msg.setGravity(Gravity.CENTER);msg.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);empty.addView(msg,new LinearLayout.LayoutParams(-1,dp(54)));playerEmpty=empty;homePlayerHolder.addView(empty,new FrameLayout.LayoutParams(-1,-1));}
+     status=tv(current==null?"Listo para reproducir":"En vivo",12,current==null?MUTED:CYAN);status.setPadding(dp(8),0,dp(8),0);card.addView(status,new LinearLayout.LayoutParams(-1,dp(19)));
+-    LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER);Button prev=mediaIconBtn("Canal anterior",R.drawable.pv_ic_prev),next=mediaIconBtn("Canal siguiente",R.drawable.pv_ic_next),retry=mediaIconBtn("Reintentar señal",R.drawable.pv_ic_refresh),full=mediaIconBtn("Pantalla completa",R.drawable.pv_ic_fullscreen),verify=mediaIconBtn("Verificar canal",R.drawable.pv_ic_info);favButton=mediaIconBtn("Favorito",R.drawable.pv_ic_star);sendTvButton=mediaIconBtn("Enviar a TV / Proyector",R.drawable.pv_ic_cast);for(Button b:new Button[]{prev,next,retry,full,favButton,verify,sendTvButton}){LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,dp(46),1);cp.setMargins(dp(2),dp(3),dp(2),dp(3));controls.addView(b,cp);}card.addView(controls,new LinearLayout.LayoutParams(-1,dp(45)));
+-    prev.setOnClickListener(v->step(-1));next.setOnClickListener(v->step(1));retry.setOnClickListener(v->{retries=0;restart();});full.setOnClickListener(v->openFullscreen());favButton.setOnClickListener(v->toggleFavorite());verify.setOnClickListener(v->validateCurrent());sendTvButton.setOnClickListener(v->openTvOutputFromPlayer());updateFav();updateTvButton();return card;
++    LinearLayout controls=new LinearLayout(this);controls.setGravity(Gravity.CENTER);
++    Button prev=mediaIconBtn("Canal anterior",R.drawable.pv_ic_prev),next=mediaIconBtn("Canal siguiente",R.drawable.pv_ic_next),full=mediaIconBtn("Pantalla completa",R.drawable.pv_ic_fullscreen),more=mediaIconBtn("Más opciones",R.drawable.pv_ic_more);
++    favButton=mediaIconBtn("Favorito",R.drawable.pv_ic_star);sendTvButton=mediaIconBtn("Enviar a TV / Proyector",R.drawable.pv_ic_cast);
++    for(Button b:new Button[]{prev,next,full,favButton,more}){b.setBackground(buttonBg(Color.rgb(21,21,21),Color.rgb(36,70,98),10));LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,dp(40),1);cp.setMargins(dp(2),dp(1),dp(2),dp(1));controls.addView(b,cp);}
++    card.addView(controls,new LinearLayout.LayoutParams(-1,dp(41)));
++    prev.setOnClickListener(v->step(-1));next.setOnClickListener(v->step(1));full.setOnClickListener(v->openFullscreen());favButton.setOnClickListener(v->toggleFavorite());
++    more.setOnClickListener(v->{String[] options={"Reintentar señal","Verificar estado del canal","Enviar a TV / Proyector"};AlertDialog d=new AlertDialog.Builder(this).setTitle("Opciones del canal").setItems(options,(dlg,n)->{if(n==0){retries=0;restart();}else if(n==1)validateCurrent();else openTvOutputFromPlayer();}).setNegativeButton("Cerrar",null).create();styleDialog(d);});
++    updateFav();updateTvButton();return card;
+   }
+ 
+   LinearLayout buildChannelList(){
+@@ -927,7 +977,7 @@
+   void setLoading(String s,String src){runOnUiThread(()->{if(count!=null)count.setText(s);if(sourceText!=null)sourceText.setText(src);if(listStatusText!=null)listStatusText.setText(s+"\n"+src);});}
+   static final class PreparedChannels{final ArrayList<Channel> active=new ArrayList<>();final ArrayList<VodItem> movies=new ArrayList<>(),series=new ArrayList<>();final ArrayList<RadioStation> music=new ArrayList<>();final HashMap<String,List<Channel>> categories=new HashMap<>();final TreeMap<String,List<Channel>> countries=new TreeMap<>();final HashMap<String,List<String>> alternates=new HashMap<>();final HashMap<String,Health> health=new HashMap<>();}
+   PreparedChannels prepareChannels(List<Channel> p){PreparedChannels out=new PreparedChannels();boolean system="palmavision".equals(loadingSourceMode);int ordinal=0;for(Channel ch:p){if(ch==null)continue;String kind=SourcePolicy.classify(system,ch.name,ch.group,ch.url);if(!SourcePolicy.LIVE.equals(kind)){String id="m3u_"+sha1(ch.id+"|"+ch.url);if(SourcePolicy.MOVIE.equals(kind))out.movies.add(new VodItem(id,ch.name,ch.group,ch.logo,"",String.valueOf(++ordinal),"","",false,ch.url));else if(SourcePolicy.SERIES.equals(kind))out.series.add(new VodItem(id,ch.name,ch.group,ch.logo,"",String.valueOf(++ordinal),"","",true,ch.url));else if(SourcePolicy.MUSIC.equals(kind)){RadioStation r=new RadioStation(id,ch.name,"Lista","Música",ch.url,ch.logo,ch.group,"",0,0);out.music.add(r);}continue;}if(system&&!verificationVisible("channel",ch.id))continue;out.active.add(ch);String cat=canonicalCategory(ch);List<Channel> cx=out.categories.get(cat);if(cx==null){cx=new ArrayList<>();out.categories.put(cat,cx);}cx.add(ch);String raw=ch.group==null?"":ch.group.trim();if(raw.startsWith("20 ")){String country=cleanGroup(raw);List<Channel> cc=out.countries.get(country);if(cc==null){cc=new ArrayList<>();out.countries.put(country,cc);}cc.add(ch);}String k=streamAltKey(ch);List<String> urls=out.alternates.get(k);if(urls==null){urls=new ArrayList<>();out.alternates.put(k,urls);}if(ch.url!=null&&!ch.url.isEmpty()&&!urls.contains(ch.url))urls.add(ch.url);if(ch.sourceCheckedAt>0)out.health.put(ch.id,new Health(HEALTH_VERIFIED,"Verificado",0,ch.sourceCheckedAt));}if(system)noteChannelCatalog(out.active);return out;}
+-  void applyChannels(List<Channel> p,String label,long generation,Runnable commit){if(p==null||p.isEmpty()||!playlistCurrent(generation))return;PreparedChannels prepared=prepareChannels(p);runOnUiThread(()->{if(!playlistCurrent(generation))return;all.clear();all.addAll(prepared.active);activeChannels.clear();activeChannels.addAll(prepared.active);if(!"palmavision".equals(loadingSourceMode)){radioItems.clear();radioItems.addAll(prepared.music);radioCatalogLoadedAt=System.currentTimeMillis();vodItems.clear();seriesItems.clear();vodShown.clear();seriesShown.clear();vodCategories.clear();seriesCategories.clear();vodCatalogLoadedAt=seriesCatalogLoadedAt=0L;if("m3u".equals(loadingSourceMode)){vodItems.addAll(prepared.movies);seriesItems.addAll(prepared.series);vodCatalogLoadedAt=seriesCatalogLoadedAt=System.currentTimeMillis();}}categoryIndex.clear();categoryIndex.putAll(prepared.categories);countryIndex.clear();countryIndex.putAll(prepared.countries);alternateStreams.clear();alternateStreams.putAll(prepared.alternates);channelHealth.clear();channelHealth.putAll(prepared.health);if(commit!=null){clearEpg();commit.run();}activeSourceLabel=label;if(sourceText!=null)sourceText.setText(label);SharedPreferences sp=getSharedPreferences("tvplus",MODE_PRIVATE);String type=sp.getString("source_type","");ManagedSource activeManaged=findManagedSource(activeSourceId());String sourceEpg=activeManaged==null?"":activeManaged.epg;String epgToLoad="",epgLabel="";if(!pendingEpgUrl.isEmpty()){epgToLoad=pendingEpgUrl;epgLabel=pendingEpgLabel;pendingEpgUrl="";pendingEpgLabel="";}else if(!"xtream".equals(type)&&sourceEpg!=null&&!sourceEpg.isEmpty()){epgToLoad=sourceEpg;epgLabel="XMLTV";}else if(!"xtream".equals(type)&&!detectedPlaylistEpgUrl.isEmpty()){epgToLoad=detectedPlaylistEpgUrl;epgLabel="EPG de la lista";}if(!epgToLoad.isEmpty())loadXmltv(epgToLoad,epgLabel);if("live".equals(page)&&adapter!=null)filter();if("livecats".equals(page))showLiveCategories();else if("countries".equals(page))showCountries();else if("fuentes de tv".equals(page)||"settings".equals(page)||"lists".equals(page))showLists();});}
++  void applyChannels(List<Channel> p,String label,long generation,Runnable commit){if(p==null||p.isEmpty()||!playlistCurrent(generation))return;PreparedChannels prepared=prepareChannels(p);runOnUiThread(()->{if(!playlistCurrent(generation))return;all.clear();all.addAll(prepared.active);activeChannels.clear();activeChannels.addAll(prepared.active);if(!"palmavision".equals(loadingSourceMode)){radioItems.clear();radioItems.addAll(prepared.music);radioCatalogLoadedAt=System.currentTimeMillis();vodItems.clear();seriesItems.clear();vodShown.clear();seriesShown.clear();vodCategories.clear();seriesCategories.clear();vodCatalogLoadedAt=seriesCatalogLoadedAt=0L;if("m3u".equals(loadingSourceMode)){vodItems.addAll(prepared.movies);seriesItems.addAll(prepared.series);vodCatalogLoadedAt=seriesCatalogLoadedAt=System.currentTimeMillis();}}categoryIndex.clear();categoryIndex.putAll(prepared.categories);countryIndex.clear();countryIndex.putAll(prepared.countries);alternateStreams.clear();alternateStreams.putAll(prepared.alternates);channelHealth.clear();channelHealth.putAll(prepared.health);if(commit!=null){clearEpg();commit.run();}activeSourceLabel=label;if(sourceText!=null)sourceText.setText(label);SharedPreferences sp=getSharedPreferences("tvplus",MODE_PRIVATE);String type=sp.getString("source_type","");ManagedSource activeManaged=findManagedSource(activeSourceId());String sourceEpg=activeManaged==null?"":activeManaged.epg;String epgToLoad="",epgLabel="";if(!pendingEpgUrl.isEmpty()){epgToLoad=pendingEpgUrl;epgLabel=pendingEpgLabel;pendingEpgUrl="";pendingEpgLabel="";}else if(!"xtream".equals(type)&&sourceEpg!=null&&!sourceEpg.isEmpty()){epgToLoad=sourceEpg;epgLabel="XMLTV";}else if(!"xtream".equals(type)&&!detectedPlaylistEpgUrl.isEmpty()){epgToLoad=detectedPlaylistEpgUrl;epgLabel="EPG de la lista";}if(!epgToLoad.isEmpty())loadXmltv(epgToLoad,epgLabel);if("live".equals(page)&&adapter!=null)filter();if("home".equals(page))showHome();if("livecats".equals(page))showLiveCategories();else if("countries".equals(page))showCountries();else if("fuentes de tv".equals(page)||"settings".equals(page)||"lists".equals(page))showLists();});}
+ 
+   void loadPrefs(){SharedPreferences p=getSharedPreferences("tvplus",MODE_PRIVATE);favorites.addAll(p.getStringSet("favorites",Collections.emptySet()));vodFavorites.addAll(p.getStringSet("vod_favorites",Collections.emptySet()));seriesFavorites.addAll(p.getStringSet("series_favorites",Collections.emptySet()));radioFavorites.addAll(p.getStringSet("radio_favorites",Collections.emptySet()));blockedChannels.addAll(p.getStringSet("blocked_channels",Collections.emptySet()));String r=p.getString("recents","");if(!r.isEmpty())for(String s:r.split("\\|"))if(!s.isEmpty())recents.add(s);String rr=p.getString("radio_recents","");if(!rr.isEmpty())for(String s:rr.split("\\|"))if(!s.isEmpty())radioRecents.add(s);autoRetryEnabled=p.getBoolean("auto_retry",true);resizeMode=p.getInt("resize_mode",0);preferredAudioLang=p.getString("preferred_audio","auto");preferredSubtitleLang=p.getString("preferred_subtitle","auto");preferredSubtitleSize=p.getInt("preferred_subtitle_size",1);verificationMaxDays=p.getInt("verification_max_days",30);parentalEnabled=p.getBoolean("parental_enabled",false);parentalPinHash=p.getString("parental_pin_hash","");pinFailures=p.getInt("pin_failures",0);pinLockedUntil=p.getLong("pin_locked_until",0L);}
+   void savePrefs(){getSharedPreferences("tvplus",MODE_PRIVATE).edit().putStringSet("favorites",new HashSet<>(favorites)).putStringSet("blocked_channels",new HashSet<>(blockedChannels)).putStringSet("vod_favorites",new HashSet<>(vodFavorites)).putStringSet("series_favorites",new HashSet<>(seriesFavorites)).putStringSet("radio_favorites",new HashSet<>(radioFavorites)).putString("recents",joinRecents()).putString("radio_recents",joinRadioRecents()).putBoolean("auto_retry",autoRetryEnabled).putInt("resize_mode",resizeMode).putString("preferred_audio",preferredAudioLang).putString("preferred_subtitle",preferredSubtitleLang).putInt("preferred_subtitle_size",preferredSubtitleSize).putInt("verification_max_days",verificationMaxDays).putBoolean("parental_enabled",parentalEnabled).putString("parental_pin_hash",parentalPinHash==null?"":parentalPinHash).putInt("pin_failures",pinFailures).putLong("pin_locked_until",pinLockedUntil).apply();}
+@@ -1036,19 +1086,34 @@
+   }
+   String freeLanguageLabel(String s){String x=s==null?"":s.toLowerCase(Locale.ROOT);if(x.contains("spanish_native")||x.contains("mostly_spanish"))return "Español";if(x.contains("subtitles")||x.contains("dubs"))return "Audio ES / subtítulos ES según título";return "Filtrar audio o subtítulos ES";}
+   void showFreeVodProviders(boolean series){
+-    setPage(series?"freeseries":"freemovies",series?"Series Gratis":"Películas Gratis");LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(9),dp(7),dp(9),dp(9));p.setBackground(outlinePanel());contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
+-    TextView h=tv((series?"Series":"Películas")+" · Gratis On Demand",21,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);p.addView(h,new LinearLayout.LayoutParams(-1,dp(36)));
+-    TextView sub=tv("Gratis o con anuncios · audio en español o subtítulos en español",11,CYAN);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(26)));
+-    LinearLayout top=new LinearLayout(this);top.setGravity(Gravity.CENTER_VERTICAL);EditText q=sourceField("Buscar proveedor…",false);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);top.addView(q,new LinearLayout.LayoutParams(0,dp(46),1));
+-    if(xtreamReady()){Button mine=iconBtn("Mi catálogo",R.drawable.pv_ic_grid);LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(120),dp(46));mp.setMargins(dp(6),0,0,0);top.addView(mine,mp);mine.setOnClickListener(v->showVodCatalog(series));}
+-    p.addView(top,new LinearLayout.LayoutParams(-1,dp(48)));
+-    TextView state=tv("",11,MUTED);p.addView(state,new LinearLayout.LayoutParams(-1,dp(28)));
+-    ListView lv=new ListView(this);ArrayList<FreeProvider> data=new ArrayList<>();BaseAdapter a=new BaseAdapter(){public int getCount(){return data.size();}public FreeProvider getItem(int pos){return data.get(pos);}public long getItemId(int pos){return pos;}public View getView(int pos,View old,ViewGroup parent){return freeProviderRow(data.get(pos),series);}};
+-    lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
+-    Runnable refresh=()->{data.clear();data.addAll(visibleFreeProviders(series,q.getText().toString()));state.setText(data.size()+" proveedores gratuitos disponibles · vigencia "+verificationMaxDays+" días");a.notifyDataSetChanged();};
+-    q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a1,int b,int cc){}public void onTextChanged(CharSequence s,int a1,int b,int cc){refresh.run();}public void afterTextChanged(android.text.Editable e){}});
+-    refresh.run();
+-  }
++    setPage(series?"freeseries":"freemovies",series?"Series Gratis":"Películas Gratis");
++    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(8),dp(5),dp(8),dp(6));p.setBackgroundColor(Color.BLACK);contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
++    LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
++    TextView h=tv(series?"Series para descubrir":"Películas para descubrir",18,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
++    header.addView(h,new LinearLayout.LayoutParams(0,dp(36),1));
++    Button sources=iconBtn("Cambiar fuente",R.drawable.pv_ic_list);sources.setTextSize(10);sources.setOnClickListener(v->showLists());header.addView(sources,new LinearLayout.LayoutParams(dp(130),dp(37)));
++    p.addView(header,new LinearLayout.LayoutParams(-1,dp(39)));
++    TextView sub=tv("Elegí una plataforma gratuita. Se abrirá su catálogo oficial.",11,MUTED);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(23)));
++    EditText q=sourceField("Buscar plataforma…",false);q.setTextSize(12);q.setSingleLine(true);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);p.addView(q,new LinearLayout.LayoutParams(-1,dp(40)));
++    TextView state=tv("",10,MUTED);p.addView(state,new LinearLayout.LayoutParams(-1,dp(22)));
++    GridView grid=new GridView(this);grid.setNumColumns(getResources().getConfiguration().screenWidthDp<630?3:4);
++    grid.setHorizontalSpacing(dp(8));grid.setVerticalSpacing(dp(8));grid.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);grid.setClipToPadding(false);
++    grid.setSelector(new ColorDrawable(Color.TRANSPARENT));ArrayList<FreeProvider> data=new ArrayList<>();
++    BaseAdapter a=new BaseAdapter(){public int getCount(){return data.size();}public FreeProvider getItem(int i){return data.get(i);}public long getItemId(int i){return i;}
++      public View getView(int pos,View old,ViewGroup parent){
++        FreeProvider item=getItem(pos);LinearLayout cell=new LinearLayout(MainActivity.this);cell.setOrientation(LinearLayout.HORIZONTAL);cell.setGravity(Gravity.CENTER_VERTICAL);cell.setPadding(dp(9),dp(5),dp(9),dp(5));cell.setBackground(rounded(Color.rgb(22,22,22),11));
++        ImageView logo=new ImageView(MainActivity.this);logo.setScaleType(ImageView.ScaleType.FIT_CENTER);cell.addView(logo,new LinearLayout.LayoutParams(dp(52),dp(55)));bindPoster(logo,item.logoUrl,"freegrid_"+item.id);
++        LinearLayout texts=new LinearLayout(MainActivity.this);texts.setOrientation(LinearLayout.VERTICAL);texts.setPadding(dp(7),0,0,0);
++        TextView name=tv(item.name,13,Color.WHITE);name.setTypeface(Typeface.DEFAULT,Typeface.BOLD);name.setSingleLine(true);name.setEllipsize(android.text.TextUtils.TruncateAt.END);texts.addView(name,new LinearLayout.LayoutParams(-1,dp(27)));
++        TextView note=tv(item.regionStatus.contains("experimental")?"Verificar disponibilidad":"Abrir plataforma ›",10,MUTED);note.setSingleLine(true);texts.addView(note,new LinearLayout.LayoutParams(-1,dp(20)));
++        cell.addView(texts,new LinearLayout.LayoutParams(0,dp(55),1));return cell;
++      }
++    };
++    grid.setAdapter(a);p.addView(grid,new LinearLayout.LayoutParams(-1,0,1));grid.setOnItemClickListener((parent,v,pos,id)->openFreeProvider(data.get(pos),series));
++    Runnable refresh=()->{data.clear();data.addAll(visibleFreeProviders(series,q.getText().toString()));state.setText(data.size()+" plataformas disponibles · sujeto a disponibilidad regional");a.notifyDataSetChanged();};
++    q.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence t,int start,int count,int after){}public void onTextChanged(CharSequence t,int start,int before,int count){refresh.run();}public void afterTextChanged(android.text.Editable e){}});refresh.run();
++  }
++
+   void showMovies(){if(palmaVisionActive()){showFreeVodProviders(false);return;}showVodCatalog(false);}
+   void showSeries(){if(palmaVisionActive()){showFreeVodProviders(true);return;}showVodCatalog(true);}
+ 
+@@ -1141,32 +1206,36 @@
+ 
+   void showRadio(){
+     setPage("radio","Música");
+-    boolean phone=getResources().getConfiguration().screenWidthDp<600;
+-    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(9),dp(6),dp(9),dp(8));p.setBackground(outlinePanel());contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
+-    TextView h=tv("Música",22,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);p.addView(h,new LinearLayout.LayoutParams(-1,dp(36)));
+-    TextView sub=tv(palmaVisionActive()?"Emisoras musicales en español o inglés · sin noticias, deportes ni talk radio":"Música de la lista activa · "+activeSourceLabel,11,CYAN);p.addView(sub,new LinearLayout.LayoutParams(-1,dp(28)));
+-
++    LinearLayout p=new LinearLayout(this);p.setOrientation(LinearLayout.VERTICAL);p.setPadding(dp(7),dp(4),dp(7),dp(6));p.setBackgroundColor(Color.BLACK);contentFrame.addView(p,new FrameLayout.LayoutParams(-1,-1));
++    LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
++    TextView h=tv("Radio y música",18,Color.WHITE);h.setTypeface(Typeface.DEFAULT,Typeface.BOLD);header.addView(h,new LinearLayout.LayoutParams(0,dp(40),1));
+     Button lang=iconBtn(radioLanguage,R.drawable.pv_ic_globe),genre=iconBtn(radioGenre,R.drawable.pv_ic_music);
+-    EditText q=sourceField("Buscar emisora…",false);q.setSingleLine(true);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);q.setText(radioQuery);
+-    LinearLayout.LayoutParams qlp=new LinearLayout.LayoutParams(-1,dp(48));qlp.setMargins(0,dp(3),0,dp(5));p.addView(q,qlp);
+-
+-    radioNowText=tv(currentRadio==null?"Selecciona una emisora":(radioActive()?"▶ ":"◌ ")+currentRadio.name+(currentRadio.track.isEmpty()?"":" · "+currentRadio.track),12,Color.WHITE);
+-    radioNowText.setPadding(dp(10),0,dp(10),0);radioNowText.setBackground(rounded(PV_SURFACE_2,12));p.addView(radioNowText,new LinearLayout.LayoutParams(-1,dp(44)));
+-
++    lang.setTextSize(11);genre.setTextSize(11);header.addView(lang,new LinearLayout.LayoutParams(dp(113),dp(37)));
++    LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(dp(125),dp(37));gp.leftMargin=dp(5);header.addView(genre,gp);p.addView(header,new LinearLayout.LayoutParams(-1,dp(42)));
++    LinearLayout body=new LinearLayout(this);body.setGravity(Gravity.TOP);p.addView(body,new LinearLayout.LayoutParams(-1,0,1));
++    LinearLayout left=new LinearLayout(this);left.setOrientation(LinearLayout.VERTICAL);
++    LinearLayout right=new LinearLayout(this);right.setOrientation(LinearLayout.VERTICAL);right.setPadding(dp(12),dp(8),dp(12),dp(8));right.setBackground(glassCard());
++    body.addView(left,new LinearLayout.LayoutParams(0,-1,3));LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(0,-1,2);rp.leftMargin=dp(9);body.addView(right,rp);
++    EditText q=sourceField("Buscar emisora…",false);q.setTextSize(12);q.setSingleLine(true);q.setImeOptions(EditorInfo.IME_ACTION_SEARCH);q.setText(radioQuery);
++    left.addView(q,new LinearLayout.LayoutParams(-1,dp(42)));
++    ListView lv=new ListView(this);RadioAdapter a=new RadioAdapter();lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(4));left.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
++    lv.setOnItemClickListener((x,v,pos,id)->{if(pos<0||pos>=radioShown.size())return;playRadioStation(radioShown.get(pos));a.notifyDataSetChanged();});
++    ImageView art=new ImageView(this);art.setImageResource(R.drawable.home_music);art.setScaleType(ImageView.ScaleType.CENTER_CROP);
++    right.addView(art,new LinearLayout.LayoutParams(-1,dp(95)));
++    radioNowText=tv(currentRadio==null?"Seleccioná una emisora":(radioActive()?"▶ ":"◌ ")+currentRadio.name+(currentRadio.track.isEmpty()?"":" · "+currentRadio.track),13,Color.WHITE);
++    radioNowText.setSingleLine(true);radioNowText.setEllipsize(android.text.TextUtils.TruncateAt.END);right.addView(radioNowText,new LinearLayout.LayoutParams(-1,dp(35)));
+     LinearLayout primaryControls=new LinearLayout(this);primaryControls.setGravity(Gravity.CENTER);
+-    Button radioPrev=iconBtn("Anterior",R.drawable.pv_ic_prev);radioPlayButton=primaryIconBtn("Reproducir",R.drawable.pv_ic_play);Button radioNext=iconBtn("Siguiente",R.drawable.pv_ic_next);
+-    for(Button b:new Button[]{radioPrev,radioPlayButton,radioNext}){b.setTextSize(phone?10:12);b.setPadding(dp(phone?5:8),0,dp(phone?5:8),0);LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,dp(48),1);bp.setMargins(dp(3),dp(3),dp(3),dp(3));primaryControls.addView(b,bp);}
+-    p.addView(primaryControls,new LinearLayout.LayoutParams(-1,dp(54)));
+-
+-    radioFavButton=iconBtn("Favorito",R.drawable.pv_ic_star);radioVolumeButton=iconBtn("Silencio",R.drawable.pv_ic_audio);radioStopButton=iconBtn("Detener",R.drawable.pv_ic_stop);radioRetryButton=iconBtn("Reintentar",R.drawable.pv_ic_refresh);
+-    Button more=iconBtn("Más",R.drawable.pv_ic_more);LinearLayout secondaryControls=new LinearLayout(this);secondaryControls.setGravity(Gravity.CENTER);LinearLayout.LayoutParams favLp=new LinearLayout.LayoutParams(0,dp(48),1),moreLp=new LinearLayout.LayoutParams(0,dp(48),1);favLp.setMargins(dp(3),0,dp(3),0);moreLp.setMargins(dp(3),0,dp(3),0);secondaryControls.addView(radioFavButton,favLp);secondaryControls.addView(more,moreLp);p.addView(secondaryControls,new LinearLayout.LayoutParams(-1,dp(52)));
++    Button radioPrev=mediaIconBtn("Anterior",R.drawable.pv_ic_prev);radioPlayButton=primaryIconBtn("Reproducir",R.drawable.pv_ic_play);Button radioNext=mediaIconBtn("Siguiente",R.drawable.pv_ic_next);
++    for(Button b:new Button[]{radioPrev,radioPlayButton,radioNext}){LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(0,dp(43),1);bp.setMargins(dp(2),0,dp(2),0);primaryControls.addView(b,bp);}
++    right.addView(primaryControls,new LinearLayout.LayoutParams(-1,dp(44)));
++    radioFavButton=mediaIconBtn("Favorito",R.drawable.pv_ic_star);radioVolumeButton=mediaIconBtn("Silencio",R.drawable.pv_ic_audio);radioStopButton=mediaIconBtn("Detener",R.drawable.pv_ic_stop);radioRetryButton=mediaIconBtn("Reintentar",R.drawable.pv_ic_refresh);
++    Button more=mediaIconBtn("Más opciones",R.drawable.pv_ic_more);LinearLayout secondaryControls=new LinearLayout(this);secondaryControls.setGravity(Gravity.CENTER);
++    secondaryControls.addView(radioFavButton,new LinearLayout.LayoutParams(0,dp(41),1));secondaryControls.addView(more,new LinearLayout.LayoutParams(0,dp(41),1));right.addView(secondaryControls,new LinearLayout.LayoutParams(-1,dp(43)));
+     more.setOnClickListener(v->{ArrayList<String> opts=new ArrayList<>();if(palmaVisionActive())opts.add("Filtros · "+radioLanguage+" · "+radioGenre);opts.add(radioMuted?"Activar sonido":"Silenciar");opts.add("Reintentar");opts.add("Detener");AlertDialog d=new AlertDialog.Builder(this).setTitle("Opciones de música").setItems(opts.toArray(new String[0]),(x,w)->{int k=0;if(palmaVisionActive()){if(w==k){String[] f={"Idioma","Género"};AlertDialog fd=new AlertDialog.Builder(this).setTitle("Filtros").setItems(f,(a,b)->{if(b==0)lang.performClick();else genre.performClick();}).setNegativeButton("Cerrar",null).create();styleDialog(fd);return;}k++;}if(w==k){toggleRadioMute();return;}k++;if(w==k){manualRetryRadio();return;}stopRadioPlayback(false);}).setNegativeButton("Cerrar",null).create();styleDialog(d);});
+     radioPrev.setOnClickListener(v->radioStep(-1));radioPlayButton.setOnClickListener(v->toggleRadioPlayback());radioNext.setOnClickListener(v->radioStep(1));
+     radioFavButton.setOnClickListener(v->toggleCurrentRadioFavorite());radioVolumeButton.setOnClickListener(v->toggleRadioMute());radioStopButton.setOnClickListener(v->stopRadioPlayback(false));radioRetryButton.setOnClickListener(v->manualRetryRadio());
+     updateRadioControls();
+ 
+-    ListView lv=new ListView(this);RadioAdapter a=new RadioAdapter();lv.setAdapter(a);lv.setDivider(new ColorDrawable(Color.TRANSPARENT));lv.setDividerHeight(dp(5));p.addView(lv,new LinearLayout.LayoutParams(-1,0,1));
+-    lv.setOnItemClickListener((x,v,pos,id)->{if(pos<0||pos>=radioShown.size())return;playRadioStation(radioShown.get(pos));a.notifyDataSetChanged();});
+ 
+     lang.setOnClickListener(v->{String[] opts={"Español","English"};AlertDialog d=new AlertDialog.Builder(this).setTitle("Idioma").setItems(opts,(x,w)->{
+       String next=opts[w];if(next.equals(radioLanguage))return;radioLanguage=next;radioGenre="Todos";radioQuery="";radioItems.clear();radioShown.clear();radioCatalogLanguage="";showRadio();loadRadioCatalog(radioLanguage);
