@@ -26,8 +26,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: SDK de Android
-        uses: android-actions/setup-android@v3
+      - name: SDK preinstalado en Ubuntu runner
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version || sdkmanager --version
       - name: Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v4
         with:
