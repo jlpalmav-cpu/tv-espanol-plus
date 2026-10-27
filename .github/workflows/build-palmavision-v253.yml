@@ -35,7 +35,12 @@ jobs:
         with:
           gradle-version: '8.10.2'
       - name: SDK plataforma 35
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
       - name: Compilar APK y pruebas unitarias
         run: gradle --no-daemon --stacktrace :app:testReleaseUnitTest :app:assembleRelease
       - name: Validar y preparar APK
