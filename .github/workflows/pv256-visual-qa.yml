@@ -1,0 +1,44 @@
+name: PalmaVision 2.5.6 - capturas UX IPTV landscape
+on:
+  push:
+    branches: [build-palmavision-v256-auditoria-50]
+    paths:
+      - .github/workflows/pv256-visual-qa.yml
+      - .github/ci/pv256_smoke.py
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  emulador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PalmaVision-2.5.6-IPTV-UX-APK
+          run-id: 40450171562
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Navegación horizontal, capturas y detección de avisos del sistema
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r PalmaVision_2.5.6.apk
+            python3 .github/ci/pv256_smoke.py
+      - name: Publicar capturas reales del emulador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PalmaVision-2.5.6-capturas-qa50
+          path: screenshots/*
+          if-no-files-found: warn
+          retention-days: 14
